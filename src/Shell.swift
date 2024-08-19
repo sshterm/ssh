@@ -102,6 +102,7 @@ public extension SSH {
             self.addOperation {
                 self.channelDelegate?.connect(ssh: self, online: false)
             }
+            self.close()
         }
         socketSource.resume()
     }

@@ -16,9 +16,6 @@ public protocol SessionDelegate {
     /// 当需要键盘交互时调用，返回用户输入的字符串
     func keyboardInteractive(ssh: SSH, prompt: String) -> String
 
-    /// 当需要跟踪信息时调用，用于输出调试信息
-    func trace(ssh: SSH, trace: String)
-
     /// 发送数据时调用，参数为发送数据的大小
     func send(ssh: SSH, size: Int)
 

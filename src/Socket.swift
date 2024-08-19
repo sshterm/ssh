@@ -28,7 +28,11 @@ public extension SSH {
                 try socket.setBlocking(mode: self.isBlocking)
                 try socket.connect(to: self.host, port: self.port, timeout: UInt(self.timeout) * 1000)
                 self.socket = socket
-                return self.sockfd != Socket.SOCKET_INVALID_DESCRIPTOR
+                guard self.sockfd != Socket.SOCKET_INVALID_DESCRIPTOR else {
+                    return false
+                }
+                self.sessionDelegate?.connect(ssh: self)
+                return true
             } catch {
                 return false
             }

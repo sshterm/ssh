@@ -121,9 +121,6 @@ extension SSH {
         guard let msg = String(data: Data(bytes: message, count: Int(messageLen)), encoding: .utf8) else {
             return
         }
-        #if DEBUG
-            print("调试:\(msg)")
-        #endif
         addOperation {
             self.sessionDelegate?.debug(ssh: self, message: msg)
         }
