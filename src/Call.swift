@@ -140,8 +140,8 @@ extension SSH {
        - languageLen: 语言长度的C语言整数
      */
     func disconnect(sess _: UnsafeRawPointer, reason _: CInt, message: UnsafePointer<CChar>, messageLen: CInt, language _: UnsafePointer<CChar>, languageLen _: CInt) {
-        let msg = Data(bytes: message, count: Int(messageLen))
         #if DEBUG
+            let msg = Data(bytes: message, count: Int(messageLen))
             print("断开:\(msg)")
         #endif
         close()
