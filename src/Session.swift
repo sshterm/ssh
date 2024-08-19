@@ -152,9 +152,6 @@ public extension SSH {
             return false
         }
         return await call {
-            guard let rawSession = self.rawSession else {
-                return false
-            }
             let code = self.callSSH2 {
                 libssh2_userauth_password_ex(rawSession, self.user, self.user.countUInt32, password, password.countUInt32, nil)
             }
@@ -181,9 +178,6 @@ public extension SSH {
             return false
         }
         return await call {
-            guard let rawSession = self.rawSession else {
-                return false
-            }
             let code = self.callSSH2 {
                 libssh2_userauth_publickey_fromfile_ex(rawSession, self.user, self.user.countUInt32, publickeyFile, privateKeyFile, passphrase)
             }
