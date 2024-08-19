@@ -62,3 +62,4 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 
 .vscode
+.DS_Store

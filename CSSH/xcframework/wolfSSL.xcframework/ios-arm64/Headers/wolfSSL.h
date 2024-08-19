@@ -56,3 +56,14 @@
 #include <wolfssl/openssl/asn1t.h>
 #include <wolfssl/openssl/cmac.h>
 #include <wolfssl/openssl/lhash.h>
+#include <wolfssl/callbacks.h>
+#include <wolfssl/crl.h>
+#include <wolfssl/ocsp.h>
+#include <wolfssl/options.h>
+#include <wolfssl/sniffer.h>
+#include <wolfssl/ssl.h>
+#include <wolfssl/version.h>
+#include <wolfssl/wolfio.h>
+#include <wolfssl/error-ssl.h>
+#include <wolfssl/quic.h>
+#include <wolfssl/sniffer_error.h>
