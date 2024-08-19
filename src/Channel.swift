@@ -185,12 +185,12 @@ public extension SSH {
                 } while true
 
                 if !self.isRead {
-                    self.closeChannel()
+                    self.cancelSources()
                 }
             }
             socketSource.setCancelHandler {
                 continuation.resume(returning: data)
-                self.cancelSources()
+                self.closeChannel()
             }
 
             timeoutSource.setEventHandler {
@@ -406,9 +406,6 @@ public extension SSH {
             }
             libssh2_channel_free(rawChannel)
             self.rawChannel = nil
-        }
-        addOperation {
-            self.channelDelegate?.connect(ssh: self, online: false)
         }
     }
 }

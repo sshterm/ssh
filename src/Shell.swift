@@ -100,9 +100,8 @@ public extension SSH {
         }
         socketSource.setCancelHandler {
             self.addOperation {
-                self.channelDelegate?.disconnect(ssh: self)
+                self.channelDelegate?.connect(ssh: self, online: false)
             }
-            self.closeChannel()
         }
         socketSource.resume()
     }
