@@ -128,13 +128,14 @@ public extension SSH {
             closeChannel()
             return (.init(), -1)
         }
-        let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
+        let buflen = bufferSize
+        let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: buflen)
         defer {
             buffer.deallocate()
         }
         let rc = call ? callSSH2 {
-            libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, self.bufferSize)
-        } : libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, bufferSize)
+            libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
+        } : libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
         return (rc > 0 ? Data(bytes: buffer, count: rc) : .init(), rc)
     }
 
