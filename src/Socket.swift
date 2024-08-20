@@ -39,6 +39,46 @@ public extension SSH {
         }
     }
 
+    /**
+     发送数据到socket
+     - Parameters:
+       - socket: 要发送数据的socket
+       - buffer: 包含要发送数据的缓冲区
+       - length: 要发送的数据长度
+       - flags: 发送标志
+     - Returns: 成功发送的字节数，如果发送失败则返回错误码
+     */
+    func send(socket: libssh2_socket_t, buffer: UnsafeRawPointer, length: size_t, flags: CInt) -> Int {
+        let size = Darwin.send(socket, buffer, length, flags)
+        if size < 0 {
+            return Int(-errno)
+        }
+        addOperation {
+            self.sessionDelegate?.send(ssh: self, size: size)
+        }
+        return size
+    }
+
+    /**
+     从socket接收数据
+     - Parameters:
+       - socket: 要接收数据的socket
+       - buffer: 用于存储接收数据的缓冲区
+       - length: 要接收的最大数据长度
+       - flags: 接收标志
+     - Returns: 成功接收的字节数，如果接收失败则返回错误码
+     */
+    func recv(socket: libssh2_socket_t, buffer: UnsafeMutableRawPointer, length: size_t, flags: CInt) -> Int {
+        let size = Darwin.recv(socket, buffer, length, flags)
+        if size < 0 {
+            return Int(-errno)
+        }
+        addOperation {
+            self.sessionDelegate?.recv(ssh: self, size: size)
+        }
+        return size
+    }
+
     /// 等待套接字变为可读或可写状态
     /// - Returns: 返回select函数的返回值，-1表示错误，0表示超时，大于0表示就绪的文件描述符数量
     func waitsocket() -> Int32 {
