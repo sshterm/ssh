@@ -81,15 +81,13 @@ public extension SSH {
         }
         socketSource.setEventHandler {
             repeat {
-                let stdout = self.read()
-                let dtderr = self.read(true)
-                if let stdout {
+                if let stdout = self.read() {
                     self.onData(stdout, true)
                 }
-                if let dtderr {
+                if let dtderr = self.read(true) {
                     self.onData(dtderr, false)
                 }
-                if self.receivedEOF{
+                if self.receivedEOF {
                     self.closeChannel()
                 }
             } while self.isPol() || self.isPol(false)

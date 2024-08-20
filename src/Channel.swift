@@ -125,7 +125,7 @@ public extension SSH {
     //   - stderr: 如果为 true，则从标准错误流读取数据，默认为 false
     //   - call: 如果为 true，则使用调用方式读取数据，否则使用锁定方式读取数据，默认为 false
     // - 返回值: 读取到的数据，如果没有数据可读则返回空数据
-    func read(_ stderr: Bool = false, call: Bool = false) -> Data?{
+    func read(_ stderr: Bool = false, call: Bool = false) -> Data? {
         guard let rawChannel = rawChannel else {
             closeChannel()
             return nil
@@ -145,8 +145,8 @@ public extension SSH {
             lock.unlock()
         }
         guard rc > 0 else {
-            if (!stderr &&  rc == LIBSSH2_ERROR_SOCKET_RECV) || (stderr && rc == LIBSSH2_ERROR_SOCKET_RECV) {
-                self.closeChannel()
+            if (!stderr && rc == LIBSSH2_ERROR_SOCKET_RECV) || (stderr && rc == LIBSSH2_ERROR_SOCKET_RECV) {
+                closeChannel()
             }
             return nil
         }
@@ -179,13 +179,12 @@ public extension SSH {
                 }
 
                 repeat {
-                    let stdout = self.read(stderr)
-                    if let stdout {
+                    if let stdout = self.read(stderr) {
                         data.append(stdout)
                     } else {
                         break
                     }
-                    if self.receivedEOF{
+                    if self.receivedEOF {
                         self.cancelSources()
                     }
                 } while self.isPol(stderr)
