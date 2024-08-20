@@ -12,17 +12,17 @@ public enum Algorithm: String, CaseIterable {
     public var EVP: UnsafePointer<WOLFSSL_EVP_MD>? {
         switch self {
         case .md5:
-            return wolfSSL_EVP_md5()
+            wolfSSL_EVP_md5()
         case .sha1:
-            return wolfSSL_EVP_sha1()
+            wolfSSL_EVP_sha1()
         case .sha224:
-            return wolfSSL_EVP_sha224()
+            wolfSSL_EVP_sha224()
         case .sha256:
-            return wolfSSL_EVP_sha256()
+            wolfSSL_EVP_sha256()
         case .sha384:
-            return wolfSSL_EVP_sha384()
+            wolfSSL_EVP_sha384()
         case .sha512:
-            return wolfSSL_EVP_sha512()
+            wolfSSL_EVP_sha512()
         }
     }
 
@@ -35,17 +35,17 @@ public enum Algorithm: String, CaseIterable {
     public var digest: Int {
         switch self {
         case .md5:
-            return 16
+            16
         case .sha1:
-            return 20
+            20
         case .sha224:
-            return 28
+            28
         case .sha256:
-            return 32
+            32
         case .sha384:
-            return 48
+            48
         case .sha512:
-            return 64
+            64
         }
     }
 }
