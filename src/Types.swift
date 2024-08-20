@@ -84,3 +84,13 @@ public enum DebugType: String, CaseIterable {
         }
     }
 }
+
+extension [DebugType] {
+    var trace: Int32 {
+        var traces: Int32 = 0
+        for t in self {
+            traces |= t.trace
+        }
+        return traces
+    }
+}

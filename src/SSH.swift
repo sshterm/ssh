@@ -26,7 +26,7 @@ public class SSH {
     public let blocking: Bool
 
     /// 用于控制 SSH 类的调试信息的输出
-    public let debug: DebugType
+    public let debug: [DebugType]
 
     /// Socket 对象，‌用于网络通信。‌
     public var socket: Socket?
@@ -71,7 +71,7 @@ public class SSH {
     ///   - compress: 是否启用压缩，默认为true
     ///   - blocking: 是否阻塞模式，默认为true
     ///   - debug: 调试类型，默认为无
-    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, debug: DebugType = .none) {
+    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, debug: [DebugType] = [.none]) {
         self.host = host
         self.port = port
         self.user = user

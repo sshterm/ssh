@@ -68,6 +68,7 @@ public extension SSH {
                 SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
             }
             self.rawSession = libssh2_session_init_ex(nil, nil, nil, UnsafeMutableRawPointer(mutating: Unmanaged.passUnretained(self).toOpaque()))
+
             libssh2_trace(self.rawSession, self.debug.trace)
             libssh2_session_set_blocking(self.rawSession, self.blocking ? 1 : 0)
             libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_COMPRESS, self.compress ? 1 : 0)
