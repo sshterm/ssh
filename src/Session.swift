@@ -51,15 +51,17 @@ public extension SSH {
     /// - Parameter abstract: 一个指向SSH实例的不安全原始指针。
     /// - Returns: 返回一个SSH实例。
     static func getSSH(from abstract: UnsafeRawPointer) -> SSH {
-        let ptr = abstract.bindMemory(to: SSH.self, capacity: 1)
-        return ptr.pointee
+        return abstract.bindMemory(to: SSH.self, capacity: 1).pointee
     }
 
+    // 从原始会话指针中获取SSH会话对象
+    // - 参数: rawSession - 原始的libssh2会话指针
+    // - 返回: 如果成功获取到SSH会话对象，则返回SSH类型，否则返回nil
     static func getSSH(from rawSession: OpaquePointer) -> SSH? {
-        let sess = libssh2_session_abstract(rawSession)
-        return sess?.withMemoryRebound(to: SSH.self, capacity: 1) { pointer in
-            pointer.pointee
+        guard let abstract = libssh2_session_abstract(rawSession) else {
+            return nil
         }
+        return SSH.getSSH(from: abstract)
     }
 
     // handshake函数用于初始化SSH会话并进行握手
