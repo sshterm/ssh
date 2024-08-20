@@ -24,6 +24,9 @@ public protocol SessionDelegate {
 
     /// 输出调试信息
     func debug(ssh: SSH, message: String)
+
+    /// 追踪SSH会话中的消息
+    func trace(ssh: SSH, message: String)
 }
 
 // 定义ChannelDelegate协议，包含SSH通道相关的回调方法
@@ -48,8 +51,15 @@ public extension SSH {
     /// - Parameter abstract: 一个指向SSH实例的不安全原始指针。
     /// - Returns: 返回一个SSH实例。
     static func getSSH(from abstract: UnsafeRawPointer) -> SSH {
-        let ptr = abstract.bindMemory(to: UnsafeRawPointer.self, capacity: 1)
-        return Unmanaged<SSH>.fromOpaque(ptr.pointee).takeUnretainedValue()
+        let ptr = abstract.bindMemory(to: SSH.self, capacity: 1)
+        return ptr.pointee
+    }
+
+    static func getSSH(from rawSession: OpaquePointer) -> SSH? {
+        let sess = libssh2_session_abstract(rawSession)
+        return sess?.withMemoryRebound(to: SSH.self, capacity: 1) { pointer in
+            pointer.pointee
+        }
     }
 
     // handshake函数用于初始化SSH会话并进行握手
@@ -67,9 +77,17 @@ public extension SSH {
             let debug: debugType = { sess, reason, message, messageLen, language, languageLen, abstract in
                 SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
             }
-            self.rawSession = libssh2_session_init_ex(nil, nil, nil, UnsafeMutableRawPointer(mutating: Unmanaged.passUnretained(self).toOpaque()))
+            let trace: libssh2_trace_handler_func = { sess, _, message, messageLen in
+                guard let message, let sess else {
+                    return
+                }
+                SSH.getSSH(from: sess)?.trace(message: message, messageLen: messageLen)
+            }
+
+            self.rawSession = libssh2_session_init_ex(nil, nil, nil, Unmanaged.passUnretained(self).toOpaque())
 
             libssh2_trace(self.rawSession, self.debug.trace)
+            libssh2_trace_sethandler(self.rawSession, nil, trace)
             libssh2_session_set_blocking(self.rawSession, self.blocking ? 1 : 0)
             libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_COMPRESS, self.compress ? 1 : 0)
             libssh2_session_banner_set(self.rawSession, "SSH-2.0-libssh2_SSHTerm-6.2")
@@ -262,7 +280,10 @@ public extension SSH {
             return await call {
                 let code = self.callSSH2 {
                     libssh2_userauth_keyboard_interactive_ex(rawSession, self.user, self.user.countUInt32) { _, _, _, _, numPrompts, prompts, responses, abstract in
-                        let ssh = SSH.getSSH(from: abstract!)
+                        guard let abstract, let from = abstract.pointee else {
+                            return
+                        }
+                        let ssh = SSH.getSSH(from: from)
                         for i in 0 ..< Int(numPrompts) {
                             guard let promptI = prompts?[i], let text = promptI.text else {
                                 continue

@@ -126,6 +126,17 @@ extension SSH {
         }
     }
 
+    // trace 函数用于记录消息，它接受一个 C 风格的字符串指针和字符串长度作为参数。
+    // - Parameters:
+    //   - message: 一个指向 C 风格字符串的 UnsafePointer，表示要记录的消息。
+    //   - messageLen: 一个 Int 类型的值，表示消息的长度。
+    func trace(message: UnsafePointer<CChar>, messageLen: Int) {
+        guard let msg = String(data: Data(bytes: message, count: messageLen), encoding: .utf8) else {
+            return
+        }
+        sessionDelegate?.trace(ssh: self, message: msg)
+    }
+
     /**
      断开与SSH会话的连接
      - Parameters:
