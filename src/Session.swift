@@ -57,7 +57,7 @@ public extension SSH {
     // 从原始会话指针中获取SSH会话对象
     // - 参数: rawSession - 原始的libssh2会话指针
     // - 返回: 如果成功获取到SSH会话对象，则返回SSH类型，否则返回nil
-    static func getSSH(from rawSession: OpaquePointer) -> SSH? {
+    static func getSSH(from rawSession: OpaquePointer?) -> SSH? {
         guard let abstract = libssh2_session_abstract(rawSession) else {
             return nil
         }
@@ -80,7 +80,7 @@ public extension SSH {
                 SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
             }
             let trace: libssh2_trace_handler_func = { sess, _, message, messageLen in
-                guard let message, let sess else {
+                guard let message else {
                     return
                 }
                 SSH.getSSH(from: sess)?.trace(message: message, messageLen: messageLen)
