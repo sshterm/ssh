@@ -2,7 +2,7 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/17.
 
-import FileKit
+import Darwin
 import Foundation
 
 public extension SSH {
@@ -505,6 +505,23 @@ public extension SSH {
         }
     }
 
+    /// 获取指定文件的大小，如果文件不存在或是一个目录，则返回nil。
+    /// - Parameter filePath: 文件的路径
+    /// - Returns: 文件的大小（以字节为单位），如果文件不存在或是一个目录，则返回nil。
+    func getFileSize(filePath: String) -> Int64? {
+        let fileManager = FileManager.default
+        var fileSize: Int64?
+        var isDir: ObjCBool = false
+        if fileManager.fileExists(atPath: filePath, isDirectory: &isDir) {
+            if !isDir.boolValue {
+                if let attr = try? fileManager.attributesOfItem(atPath: filePath) {
+                    fileSize = attr[FileAttributeKey.size] as? Int64
+                }
+            }
+        }
+        return fileSize
+    }
+
     // 写入本地文件到SFTP服务器
     /// 将本地文件上传到SFTP服务器的指定路径
     /// - Parameters:
@@ -533,14 +550,9 @@ public extension SSH {
             defer {
                 libssh2_sftp_close_handle(handle)
             }
-            let fileinfo = Path(rawValue: localPath)
-            guard fileinfo.isRegular else {
+            guard let fileSize = self.getFileSize(filePath: localPath) else {
                 return false
             }
-            guard let size = fileinfo.fileSize else {
-                return false
-            }
-            let fileSize = Int64(size)
             var nread, rc: Int
             var total: Int64 = 0
             let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
