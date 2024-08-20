@@ -31,11 +31,11 @@ public enum FingerprintHashType: String {
     var digest: Int {
         switch self {
         case .md5:
-            return Algorithm.md5.digest
+            Algorithm.md5.digest
         case .sha1:
-            return Algorithm.sha1.digest
+            Algorithm.sha1.digest
         case .sha256:
-            return Algorithm.sha256.digest
+            Algorithm.sha256.digest
         }
     }
 
@@ -43,11 +43,11 @@ public enum FingerprintHashType: String {
     var hashType: Int32 {
         switch self {
         case .md5:
-            return LIBSSH2_HOSTKEY_HASH_MD5
+            LIBSSH2_HOSTKEY_HASH_MD5
         case .sha1:
-            return LIBSSH2_HOSTKEY_HASH_SHA1
+            LIBSSH2_HOSTKEY_HASH_SHA1
         case .sha256:
-            return LIBSSH2_HOSTKEY_HASH_SHA256
+            LIBSSH2_HOSTKEY_HASH_SHA256
         }
     }
 }
@@ -60,27 +60,27 @@ public enum DebugType: String, CaseIterable {
     var trace: Int32 {
         switch self {
         case .trans:
-            return LIBSSH2_TRACE_TRANS // 传输跟踪级别
+            LIBSSH2_TRACE_TRANS // 传输跟踪级别
         case .kex:
-            return LIBSSH2_TRACE_KEX // 密钥交换跟踪级别
+            LIBSSH2_TRACE_KEX // 密钥交换跟踪级别
         case .auth:
-            return LIBSSH2_TRACE_AUTH // 认证跟踪级别
+            LIBSSH2_TRACE_AUTH // 认证跟踪级别
         case .conn:
-            return LIBSSH2_TRACE_CONN // 连接跟踪级别
+            LIBSSH2_TRACE_CONN // 连接跟踪级别
         case .scp:
-            return LIBSSH2_TRACE_SCP // SCP跟踪级别
+            LIBSSH2_TRACE_SCP // SCP跟踪级别
         case .sftp:
-            return LIBSSH2_TRACE_SFTP // SFTP跟踪级别
+            LIBSSH2_TRACE_SFTP // SFTP跟踪级别
         case .error:
-            return LIBSSH2_TRACE_ERROR // 错误跟踪级别
+            LIBSSH2_TRACE_ERROR // 错误跟踪级别
         case .publickey:
-            return LIBSSH2_TRACE_PUBLICKEY // 公钥跟踪级别
+            LIBSSH2_TRACE_PUBLICKEY // 公钥跟踪级别
         case .socket:
-            return LIBSSH2_TRACE_SOCKET // 套接字跟踪级别
+            LIBSSH2_TRACE_SOCKET // 套接字跟踪级别
         case .all:
-            return ~0 // 所有跟踪级别
+            ~0 // 所有跟踪级别
         case .none:
-            return 0 // 无跟踪级别
+            0 // 无跟踪级别
         }
     }
 }
