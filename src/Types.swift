@@ -5,13 +5,7 @@
 import Foundation
 
 public enum PtyType: String, CaseIterable {
-    // 枚举值包括vanilla, vt100, vt102, vt220, ansi, xterm
-    case vanilla
-    case vt100
-    case vt102
-    case vt220
-    case ansi
-    case xterm
+    case vanilla, vt100, vt102, vt220, ansi, xterm
 
     // 计算并返回枚举值对应的字符串的UTF-8字符长度，作为UInt32类型
     var lengthUInt32: UInt32 {

@@ -17,7 +17,7 @@ public extension SSH {
             }
             self.closeChannel()
             let rawChannel = self.callSSH2 {
-                libssh2_channel_open_ex(rawSession, "session", 7, 2 * 1024 * 1024, 32768, nil, 0)
+                libssh2_channel_open_ex(rawSession, "session", 7, 2 * 1024 * 1024, 32768, "SSH Term", 8)
             }
             guard let rawChannel else {
                 return false
@@ -54,7 +54,7 @@ public extension SSH {
 
     // 定义isRead属性，当通道未接收到EOF（文件结束符）、未接收到退出信号且连接状态为真时，返回true
     var isRead: Bool {
-        !receivedEOF && !receivedExit && isConnected
+        !(receivedEOF || receivedExit)
     }
 
     /// 执行一个SSH命令，并异步返回命令执行结果的数据。
@@ -125,10 +125,10 @@ public extension SSH {
     //   - stderr: 如果为 true，则从标准错误流读取数据，默认为 false
     //   - call: 如果为 true，则使用调用方式读取数据，否则使用锁定方式读取数据，默认为 false
     // - 返回值: 读取到的数据，如果没有数据可读则返回空数据
-    func read(_ stderr: Bool = false, call: Bool = false) -> Data {
+    func read(_ stderr: Bool = false, call: Bool = false) -> Data?{
         guard let rawChannel = rawChannel else {
             closeChannel()
-            return .init()
+            return nil
         }
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
         defer {
@@ -145,7 +145,10 @@ public extension SSH {
             lock.unlock()
         }
         guard rc > 0 else {
-            return .init()
+            if (!stderr &&  rc == LIBSSH2_ERROR_SOCKET_RECV) || (stderr && rc == LIBSSH2_ERROR_SOCKET_RECV) {
+                self.closeChannel()
+            }
+            return nil
         }
         return Data(bytes: buffer, count: rc)
     }
@@ -176,13 +179,16 @@ public extension SSH {
                 }
 
                 repeat {
-                    let d = self.read(stderr, call: true)
-                    if d.count > 0 {
-                        data.append(d)
+                    let stdout = self.read(stderr)
+                    if let stdout {
+                        data.append(stdout)
                     } else {
                         break
                     }
-                } while true
+                    if self.receivedEOF{
+                        self.cancelSources()
+                    }
+                } while self.isPol(stderr)
 
                 if !self.isRead {
                     self.cancelSources()
@@ -204,6 +210,16 @@ public extension SSH {
                 self.cancelSources()
             }
         }
+    }
+
+    /// 检查从SSH通道接收数据的状态。
+    /// - Parameter stderr: 如果为true，则检查标准错误流的数据；否则，检查标准输出流的数据。
+    /// - Returns: 如果成功接收到数据，则返回true；否则返回false。
+    func isPol(_ stderr: Bool = false) -> Bool {
+        guard let rawChannel = rawChannel else {
+            return false
+        }
+        return libssh2_poll_channel_read(rawChannel, stderr ? SSH_EXTENDED_DATA_STDERR : 0) != 0
     }
 
     // 判断是否接收到退出状态

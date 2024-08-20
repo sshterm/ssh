@@ -81,19 +81,18 @@ public extension SSH {
         }
         socketSource.setEventHandler {
             repeat {
-                let stdout = self.read(false)
-                if stdout.count > 0 {
+                let stdout = self.read()
+                let dtderr = self.read(true)
+                if let stdout {
                     self.onData(stdout, true)
                 }
-                let dtderr = self.read(true)
-                if dtderr.count > 0 {
+                if let dtderr {
                     self.onData(dtderr, false)
                 }
-                if !(stdout.count > 0 || dtderr.count > 0) {
-                    break
+                if self.receivedEOF{
+                    self.closeChannel()
                 }
-            } while true
-
+            } while self.isPol() || self.isPol(false)
             if !self.isRead {
                 self.closeChannel()
             }
@@ -102,7 +101,7 @@ public extension SSH {
             self.addOperation {
                 self.channelDelegate?.connect(ssh: self, online: false)
             }
-            self.close()
+            self.closeChannel()
         }
         socketSource.resume()
     }
@@ -112,6 +111,9 @@ public extension SSH {
     ///   - data: 接收到的数据。
     ///   - stdout: 如果为true，数据将被发送到标准输出；如果为false，数据将被发送到错误输出。
     private func onData(_ data: Data, _ stdout: Bool) {
+        guard data.count > 0 else {
+            return
+        }
         addOperation {
             stdout ? self.channelDelegate?.stdout(ssh: self, data: data) : self.channelDelegate?.dtderr(ssh: self, data: data)
         }
