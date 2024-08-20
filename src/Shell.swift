@@ -78,7 +78,7 @@ public extension SSH {
         socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
         socketSource?.setEventHandler {
             repeat {
-                let (stdout, rc, dtderr, erc) = self.read(wait: false)
+                let (stdout, rc, dtderr, erc) = self.read()
                 guard rc >= 0 || erc >= 0 else {
                     if (rc == LIBSSH2_ERROR_SOCKET_RECV) || erc == LIBSSH2_ERROR_SOCKET_RECV {
                         self.closeShell()

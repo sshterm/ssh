@@ -138,14 +138,13 @@ public extension SSH {
         return (rc > 0 ? Data(bytes: buffer, count: rc) : .init(), rc)
     }
 
-    /// 从通道读取数据，可以选择是否等待。
-    /// - Parameter wait: 是否等待数据可读，默认为true。
-    /// - Returns: 一个元组，包含读取的数据和状态码，以及错误数据和错误状态码。
-    func read(wait: Bool = true) -> (Data, Int, Data, Int) {
+    /// 同时读取正常数据和错误数据的函数。
+    /// - Returns: 一个元组，包含正常数据、正常数据的错误码、错误数据和错误数据的错误码。
+    func read() -> (Data, Int, Data, Int) {
         var rc, erc: Int
         var data, dataer: Data
-        (data, rc) = read(wait: wait)
-        (dataer, erc) = read(err: true, wait: wait)
+        (data, rc) = read(wait: false)
+        (dataer, erc) = read(err: true, wait: false)
         return (data, rc, dataer, erc)
     }
 
