@@ -40,7 +40,6 @@ public extension SSH {
             guard let rawChannel = self.rawChannel else {
                 return false
             }
-
             let code = self.callSSH2 {
                 libssh2_channel_request_pty_size_ex(rawChannel, width, height, LIBSSH2_TERM_WIDTH_PX, LIBSSH2_TERM_HEIGHT_PX)
             }
