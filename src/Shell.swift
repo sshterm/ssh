@@ -78,7 +78,7 @@ public extension SSH {
         socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
         socketSource?.setEventHandler {
             repeat {
-                let (stdout, rc, dtderr, erc) = self.read()
+                let (stdout, rc, dtderr, erc) = self.read(wait: false)
                 guard rc >= 0 || erc >= 0 else {
                     if (rc == LIBSSH2_ERROR_SOCKET_RECV) || erc == LIBSSH2_ERROR_SOCKET_RECV {
                         self.closeShell()
@@ -114,7 +114,7 @@ public extension SSH {
     /// 该方法会断开SSH连接，取消所有操作源，并关闭通道
     func closeShell() {
         #if DEBUG
-            print("关闭Shell", lastError?.localizedDescription)
+            print("关闭Shell", lastError?.localizedDescription ?? "")
         #endif
         job.cancelAllOperations()
         cancelSources()

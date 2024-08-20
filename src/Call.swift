@@ -15,46 +15,55 @@ extension SSH {
         }
     }
 
-    /// 调用一个返回`Int32`的闭包，‌并处理`LIBSSH2_ERROR_EAGAIN`错误。‌
-    /// - Parameter callback: 要执行的闭包，‌返回`Int32`。‌
-    /// - Returns: 闭包执行的结果。‌如果返回`LIBSSH2_ERROR_EAGAIN`，‌则可能会重试。‌
-    func callSSH2(_ callback: @escaping () -> Int32) -> Int32 {
+    // callSSH2 函数用于执行 SSH2 调用，并根据 wait 参数决定是否等待。
+    // 参数:
+    // - wait: 一个布尔值，指示是否等待操作完成。
+    // - callback: 一个闭包，执行后返回一个 Int32 类型的结果。
+    // 返回值:
+    // - Int32: 操作的结果代码。
+    func callSSH2(_ wait: Bool = true, _ callback: @escaping () -> Int32) -> Int32 {
         var ret: Int32
         repeat {
             lock.lock()
             ret = callback()
             lock.unlock()
-            guard ret == LIBSSH2_ERROR_EAGAIN else { break }
+            guard wait, ret == LIBSSH2_ERROR_EAGAIN else { break }
             guard waitsocket() > 0 else { break }
         } while true
         return ret
     }
 
-    /// 调用一个返回`Int`的闭包，‌并处理`LIBSSH2_ERROR_EAGAIN`错误。‌
-    /// - Parameter callback: 要执行的闭包，‌返回`Int`。‌
-    /// - Returns: 闭包执行的结果。‌如果返回`LIBSSH2_ERROR_EAGAIN`，‌则可能会重试。‌
-    func callSSH2(_ callback: @escaping () -> Int) -> Int {
+    // callSSH2 函数用于执行 SSH2 调用，可以选择是否等待操作完成，并通过回调函数返回结果。
+    // 参数:
+    // - wait: 一个布尔值，指示是否等待 SSH2 操作完成，默认为 true。
+    // - callback: 一个闭包，执行后返回一个整数，表示操作的当前状态。
+    // 返回值:
+    // - 如果操作成功或不需要等待，则返回回调函数的结果；如果等待超时，则返回相应的错误代码。
+    func callSSH2(_ wait: Bool = true, _ callback: @escaping () -> Int) -> Int {
         var ret: Int
         repeat {
             lock.lock()
             ret = callback()
             lock.unlock()
-            guard ret == LIBSSH2_ERROR_EAGAIN else { break }
+            guard wait, ret == LIBSSH2_ERROR_EAGAIN else { break }
             guard waitsocket() > 0 else { break }
         } while true
         return ret
     }
 
-    /// 调用一个返回可选类型`T?`的闭包，‌并处理`LIBSSH2_ERROR_EAGAIN`错误。‌
-    /// - Parameter callback: 要执行的闭包，‌返回`T?`。‌
-    /// - Returns: 闭包执行的结果。‌如果返回`nil`且错误为`LIBSSH2_ERROR_EAGAIN`，‌则可能会重试。‌
-    func callSSH2<T>(_ callback: @escaping () -> T?) -> T? {
+    // callSSH2 函数用于执行 SSH2 操作，并根据需要等待操作完成。
+    // 参数:
+    // - wait: 一个布尔值，指示是否应该等待操作完成。默认为 true。
+    // - callback: 一个闭包，执行 SSH2 操作并返回一个可选的结果。
+    // 返回值:
+    // - 一个可选的结果类型 T?，如果操作成功完成则包含结果，否则为 nil。
+    func callSSH2<T>(_ wait: Bool = true, _ callback: @escaping () -> T?) -> T? {
         var ret: T?
         repeat {
             lock.lock()
             ret = callback()
             lock.unlock()
-            guard ret == nil, let rawSession, libssh2_session_last_errno(rawSession) == LIBSSH2_ERROR_EAGAIN else { break }
+            guard wait, ret == nil, let rawSession, libssh2_session_last_errno(rawSession) == LIBSSH2_ERROR_EAGAIN else { break }
             guard waitsocket() > 0 else { break }
         } while true
         return ret

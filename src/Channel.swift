@@ -117,11 +117,12 @@ public extension SSH {
         }
     }
 
-    /// 从通道读取数据，可以选择是否包含错误信息。
-    /// - Parameter err: 如果为true，则包含错误信息；否则只包含标准输出。
-    /// - Parameter call: 如果为true，则通过调用进行读取，否则直接读取。
-    /// - Returns: 一个元组，包含读取的数据(Data)和读取的字节数(Int)。如果读取失败，返回空数据和-1。
-    func read(err: Bool = false, call: Bool = false) -> (Data, Int) {
+    /// 从通道读取数据，可以选择是否读取错误信息和是否等待数据。
+    /// - Parameters:
+    ///   - err: 是否读取错误信息，默认为false。
+    ///   - wait: 是否等待数据，默认为true。
+    /// - Returns: 返回一个元组，包含读取的数据和读取的字节数。如果没有数据可读或者通道已关闭，返回空的Data和-1。
+    func read(err: Bool = false, wait: Bool = true) -> (Data, Int) {
         guard let rawChannel = rawChannel else {
             closeChannel()
             return (.init(), -1)
@@ -131,30 +132,29 @@ public extension SSH {
         defer {
             buffer.deallocate()
         }
-        let rc = call ? callSSH2 {
+        let rc = callSSH2(wait) {
             libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
-        } : libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
+        }
         return (rc > 0 ? Data(bytes: buffer, count: rc) : .init(), rc)
     }
 
-    /// 从通道读取数据，可以选择是否通过调用进行读取。
-    /// - Parameter call: 如果为true，则通过调用进行读取，否则直接读取。
-    /// - Returns: 一个包含四个元素的元组，分别是标准输出数据、标准输出字节数、标准错误输出数据、标准错误输出字节数。
-    func read(call: Bool = false) -> (Data, Int, Data, Int) {
+    /// 从通道读取数据，可以选择是否等待。
+    /// - Parameter wait: 是否等待数据可读，默认为true。
+    /// - Returns: 一个元组，包含读取的数据和状态码，以及错误数据和错误状态码。
+    func read(wait: Bool = true) -> (Data, Int, Data, Int) {
         var rc, erc: Int
         var data, dataer: Data
-        lock.lock()
-        (data, rc) = read(call: call)
-        (dataer, erc) = read(err: true, call: call)
-        lock.unlock()
+        (data, rc) = read(wait: wait)
+        (dataer, erc) = read(err: true, wait: wait)
         return (data, rc, dataer, erc)
     }
 
-    // read 方法是一个异步方法，用于从通道异步读取数据，可以选择是否从标准错误流读取，并提供一个回调函数。
-    // - 参数:
-    //   - stderr: 如果为 true，则从标准错误流读取数据，默认为 false
-    //   - callback: 一个回调函数，用于决定是否继续读取数据
-    // - 返回值: 读取到的数据，如果没有数据可读或者在回调函数返回 false 时取消读取，则返回 nil
+    /// 读取通道数据的方法。
+    /// - Parameters:
+    ///   - stderr: 一个布尔值，指示是否从标准错误流读取数据，默认为false，即从标准输出流读取。
+    ///   - callback: 一个闭包，当读取操作完成后调用，返回一个布尔值表示操作是否成功。
+    /// - Returns: 一个可选的Data对象，包含读取到的数据，如果读取失败或没有数据可读，则返回nil。
+    /// - Note: 该方法是异步的，使用async/await模式。
     func read(stderr: Bool = false, callback: @escaping () -> Bool) async -> Data? {
         await withUnsafeContinuation { continuation in
             self.channelBlocking(false)
@@ -175,9 +175,8 @@ public extension SSH {
                 defer {
                     timeoutSource.resume()
                 }
-
                 repeat {
-                    let (stdout, rc) = self.read(err: stderr, call: true)
+                    let (stdout, rc) = self.read(err: stderr, wait: false)
                     guard rc >= 0 else {
                         if rc == LIBSSH2_ERROR_SOCKET_RECV {
                             self.cancelSources()
