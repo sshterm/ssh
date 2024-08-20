@@ -65,13 +65,12 @@ public extension SSH {
             return nil
         }
         defer {
-            closeChannel()
+            self.closeChannel()
         }
         return await read {
             guard let rawChannel = self.rawChannel else {
                 return false
             }
-            self.channelBlocking(false)
             let code = self.callSSH2 {
                 libssh2_channel_process_startup(rawChannel, "exec", 4, command, command.countUInt32)
             }
@@ -120,37 +119,36 @@ public extension SSH {
         }
     }
 
-    // read 方法用于从通道读取数据，可以选择是否从标准错误流读取。
-    // - 参数:
-    //   - stderr: 如果为 true，则从标准错误流读取数据，默认为 false
-    //   - call: 如果为 true，则使用调用方式读取数据，否则使用锁定方式读取数据，默认为 false
-    // - 返回值: 读取到的数据，如果没有数据可读则返回空数据
-    func read(_ stderr: Bool = false, call: Bool = false) -> Data? {
+    /// 从通道读取数据，可以选择是否包含错误信息。
+    /// - Parameter err: 如果为true，则包含错误信息；否则只包含标准输出。
+    /// - Parameter call: 如果为true，则通过调用进行读取，否则直接读取。
+    /// - Returns: 一个元组，包含读取的数据(Data)和读取的字节数(Int)。如果读取失败，返回空数据和-1。
+    func read(err: Bool = false, call: Bool = false) -> (Data, Int) {
         guard let rawChannel = rawChannel else {
             closeChannel()
-            return nil
+            return (.init(), -1)
         }
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
         defer {
             buffer.deallocate()
         }
-        var rc: Int
-        if call {
-            rc = callSSH2 {
-                libssh2_channel_read_ex(rawChannel, stderr ? SSH_EXTENDED_DATA_STDERR : 0, buffer, self.bufferSize)
-            }
-        } else {
-            lock.lock()
-            rc = libssh2_channel_read_ex(rawChannel, stderr ? SSH_EXTENDED_DATA_STDERR : 0, buffer, bufferSize)
-            lock.unlock()
-        }
-        guard rc > 0 else {
-            if (!stderr && rc == LIBSSH2_ERROR_SOCKET_RECV) || (stderr && rc == LIBSSH2_ERROR_SOCKET_RECV) {
-                closeChannel()
-            }
-            return nil
-        }
-        return Data(bytes: buffer, count: rc)
+        let rc = call ? callSSH2 {
+            libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, self.bufferSize)
+        } : libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, bufferSize)
+        return (rc > 0 ? Data(bytes: buffer, count: rc) : .init(), rc)
+    }
+
+    /// 从通道读取数据，可以选择是否通过调用进行读取。
+    /// - Parameter call: 如果为true，则通过调用进行读取，否则直接读取。
+    /// - Returns: 一个包含四个元素的元组，分别是标准输出数据、标准输出字节数、标准错误输出数据、标准错误输出字节数。
+    func read(call: Bool = false) -> (Data, Int, Data, Int) {
+        var rc, erc: Int
+        var data, dataer: Data
+        lock.lock()
+        (data, rc) = read(call: call)
+        (dataer, erc) = read(err: true, call: call)
+        lock.unlock()
+        return (data, rc, dataer, erc)
     }
 
     // read 方法是一个异步方法，用于从通道异步读取数据，可以选择是否从标准错误流读取，并提供一个回调函数。
@@ -160,6 +158,7 @@ public extension SSH {
     // - 返回值: 读取到的数据，如果没有数据可读或者在回调函数返回 false 时取消读取，则返回 nil
     func read(stderr: Bool = false, callback: @escaping () -> Bool) async -> Data? {
         await withUnsafeContinuation { continuation in
+            self.channelBlocking(false)
             self.cancelSources()
             self.socketSource = DispatchSource.makeReadSource(fileDescriptor: self.sockfd, queue: self.queue)
             self.timeoutSource = DispatchSource.makeTimerSource(queue: self.queue)
@@ -170,7 +169,7 @@ public extension SSH {
             var data = Data()
             socketSource.setEventHandler {
                 guard let timeoutSource = self.timeoutSource else {
-                    self.closeChannel()
+                    self.cancelSources()
                     return
                 }
                 timeoutSource.suspend()
@@ -179,13 +178,20 @@ public extension SSH {
                 }
 
                 repeat {
-                    if let stdout = self.read(stderr) {
-                        data.append(stdout)
-                    } else {
+                    let (stdout, rc) = self.read(err: stderr, call: true)
+                    guard rc >= 0 else {
+                        if rc == LIBSSH2_ERROR_SOCKET_RECV {
+                            self.cancelSources()
+                            return
+                        }
                         break
+                    }
+                    if rc > 0 {
+                        data.append(stdout)
                     }
                     if self.receivedEOF {
                         self.cancelSources()
+                        return
                     }
                 } while self.isPol(stderr)
 
@@ -195,14 +201,15 @@ public extension SSH {
             }
             socketSource.setCancelHandler {
                 continuation.resume(returning: data)
-                self.closeChannel()
+                // self.cancelSources()
             }
 
             timeoutSource.setEventHandler {
-                self.cancelSources()
+                // self.cancelSources()
             }
             let timeout = TimeInterval(self.sessionTimeout)
             timeoutSource.schedule(deadline: .now() + timeout, repeating: timeout, leeway: .seconds(10))
+
             socketSource.resume()
             timeoutSource.resume()
             if !callback() {
@@ -398,20 +405,25 @@ public extension SSH {
     // 取消所有定时器和socket源
     /// 取消当前所有的定时器和socket事件源。
     func cancelSources() {
-        if let timeoutSource = timeoutSource {
-            timeoutSource.cancel()
-            self.timeoutSource = nil
-        }
+        #if DEBUG
+            print("取消所有定时器和socket源")
+        #endif
         if let socketSource = socketSource {
             socketSource.cancel()
             self.socketSource = nil
+        }
+        if let timeoutSource = timeoutSource {
+            timeoutSource.cancel()
+            self.timeoutSource = nil
         }
     }
 
     // 关闭SSH通道
     /// 关闭当前的SSH通道，并取消所有相关的事件源。
     func closeChannel() {
-        cancelSources()
+        #if DEBUG
+            print("关闭SSH通道")
+        #endif
         if let rawChannel {
             _ = callSSH2 {
                 libssh2_channel_send_eof(rawChannel)
@@ -421,9 +433,9 @@ public extension SSH {
             }
             libssh2_channel_free(rawChannel)
             self.rawChannel = nil
-        }
-        addOperation {
-            self.channelDelegate?.disconnect(ssh: self)
+            addOperation {
+                self.channelDelegate?.disconnect(ssh: self)
+            }
         }
     }
 }

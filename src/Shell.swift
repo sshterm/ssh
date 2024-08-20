@@ -13,6 +13,8 @@ public extension SSH {
             guard let rawChannel = self.rawChannel else {
                 return false
             }
+            self.channelBlocking(false)
+            self.cancelSources()
             self.poll()
             let code = self.callSSH2 {
                 libssh2_channel_process_startup(rawChannel, "shell", 5, nil, 0)
@@ -73,35 +75,50 @@ public extension SSH {
 
     // poll方法用于轮询socket，读取标准输出和错误输出，并在适当的时候关闭通道。
     private func poll() {
-        cancelSources()
-        channelBlocking(false)
-        self.socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
-        guard let socketSource = socketSource else {
-            return
-        }
-        socketSource.setEventHandler {
+        socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
+        socketSource?.setEventHandler {
             repeat {
-                if let stdout = self.read() {
+                let (stdout, rc, dtderr, erc) = self.read()
+                guard rc >= 0 || erc >= 0 else {
+                    if (rc == LIBSSH2_ERROR_SOCKET_RECV) || erc == LIBSSH2_ERROR_SOCKET_RECV {
+                        self.closeShell()
+                        return
+                    }
+                    break
+                }
+                if rc > 0 {
                     self.onData(stdout, true)
                 }
-                if let dtderr = self.read(true) {
+                if erc > 0 {
                     self.onData(dtderr, false)
                 }
                 if self.receivedEOF {
-                    self.closeChannel()
+                    self.closeShell()
+                    return
                 }
-            } while self.isPol() || self.isPol(false)
+            } while true
             if !self.isRead {
-                self.closeChannel()
+                self.closeShell()
             }
         }
-        socketSource.setCancelHandler {
-            self.addOperation {
-                self.channelDelegate?.connect(ssh: self, online: false)
-            }
-            self.closeChannel()
+        socketSource?.setCancelHandler {
+            #if DEBUG
+                print("轮询socket关闭")
+            #endif
+            self.channelDelegate?.connect(ssh: self, online: false)
         }
-        socketSource.resume()
+        socketSource?.resume()
+    }
+
+    /// 关闭Shell的方法
+    /// 该方法会断开SSH连接，取消所有操作源，并关闭通道
+    func closeShell() {
+        #if DEBUG
+            print("关闭Shell", lastError?.localizedDescription)
+        #endif
+        job.cancelAllOperations()
+        cancelSources()
+        closeChannel()
     }
 
     /// 当接收到数据时调用此方法，根据stdout参数决定将数据发送到标准输出还是错误输出。

@@ -398,6 +398,10 @@ public extension SSH {
             self.sessionDelegate?.disconnect(ssh: self)
         }
         shutdown(SHUT_RD)
+        lock.lock()
+        defer {
+            self.lock.unlock()
+        }
         closeSFTP()
         closeChannel()
 

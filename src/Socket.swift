@@ -25,13 +25,12 @@ public extension SSH {
         await call {
             do {
                 let socket = try Socket.create(family: .unix)
-                try socket.setBlocking(mode: self.isBlocking)
+                // try socket.setBlocking(mode: self.isBlocking)
                 try socket.connect(to: self.host, port: self.port, timeout: UInt(self.timeout) * 1000)
                 self.socket = socket
                 guard self.sockfd != Socket.SOCKET_INVALID_DESCRIPTOR else {
                     return false
                 }
-                self.sessionDelegate?.connect(ssh: self)
                 return true
             } catch {
                 return false
