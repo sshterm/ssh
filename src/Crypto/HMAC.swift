@@ -29,10 +29,12 @@ public extension Crypto {
         let evp = algorithm.EVP
         let digest = wolfSSL_EVP_MD_size(evp)
         let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
+        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
         defer {
             buffer.deallocate()
+            len.deallocate()
         }
-        wolfSSL_HMAC(evp, key, key_len, message, message_len, buffer, nil)
-        return Data(bytes: buffer, count: Int(digest))
+        wolfSSL_HMAC(evp, key, key_len, message, message_len, buffer, len)
+        return Data(bytes: buffer, count: Int(len.pointee))
     }
 }
