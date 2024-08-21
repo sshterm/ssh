@@ -3,8 +3,11 @@
 // Created by admin@ssh2.app 2024/8/18.
 
 import Foundation
-import wolfSSL
-
+#if OPEN_SSL
+    import OpenSSL
+#else
+    import wolfSSL
+#endif
 // 提供HMAC加密功能
 public extension Crypto {
     // 对外提供的HMAC加密接口，接受String类型的消息和密钥
@@ -26,15 +29,28 @@ public extension Crypto {
     ///   - algorithm: 要使用的哈希算法。
     /// - Returns: 包含计算出的HMAC值的Data对象。
     func hmac(_ message: UnsafeRawPointer, message_len: Int, key: UnsafeRawPointer, key_len: Int32, algorithm: Algorithm) -> Data {
-        let evp = algorithm.EVP
-        let digest = wolfSSL_EVP_MD_size(evp)
-        let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
-        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
-        defer {
-            buffer.deallocate()
-            len.deallocate()
-        }
-        wolfSSL_HMAC(evp, key, key_len, message, message_len, buffer, len)
-        return Data(bytes: buffer, count: Int(len.pointee))
+        #if OPEN_SSL
+            let evp = algorithm.EVP
+            let digest = EVP_MD_get_size(evp)
+            let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
+            let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
+            defer {
+                buffer.deallocate()
+                len.deallocate()
+            }
+            HMAC(evp, key, key_len, message, message_len, buffer, len)
+            return Data(bytes: buffer, count: Int(len.pointee))
+        #else
+            let evp = algorithm.EVP
+            let digest = wolfSSL_EVP_MD_size(evp)
+            let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
+            let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
+            defer {
+                buffer.deallocate()
+                len.deallocate()
+            }
+            wolfSSL_HMAC(evp, key, key_len, message, message_len, buffer, len)
+            return Data(bytes: buffer, count: Int(len.pointee))
+        #endif
     }
 }

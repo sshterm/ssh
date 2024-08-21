@@ -3,8 +3,11 @@
 // Created by admin@ssh2.app 2024/8/18.
 
 import Foundation
-import wolfSSL
-
+#if OPEN_SSL
+    import OpenSSL
+#else
+    import wolfSSL
+#endif
 public extension Crypto {
     /// 使用指定的算法对字符串进行SHA哈希计算
     /// - Parameters:
@@ -30,19 +33,36 @@ public extension Crypto {
     // - algorithm: 使用的 SHA 算法
     /// - Returns: 哈希计算后的Data对象
     func sha(_ message: UnsafeRawPointer, message_len: Int, algorithm: Algorithm) -> Data {
-        let evp = algorithm.EVP
-        let digest = wolfSSL_EVP_MD_size(evp)
-        let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
-        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
-        defer {
-            buffer.deallocate()
-            len.deallocate()
-        }
-        let mdctx = wolfSSL_EVP_MD_CTX_new()
-        wolfSSL_EVP_DigestInit(mdctx, evp)
-        wolfSSL_EVP_DigestUpdate(mdctx, message, message_len)
-        wolfSSL_EVP_DigestFinal_ex(mdctx, buffer, len)
-        wolfSSL_EVP_MD_CTX_free(mdctx)
-        return Data(bytes: buffer, count: Int(len.pointee))
+        #if OPEN_SSL
+            let evp = algorithm.EVP
+            let digest = EVP_MD_get_size(evp)
+            let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
+            let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
+            defer {
+                buffer.deallocate()
+                len.deallocate()
+            }
+            let mdctx = EVP_MD_CTX_new()
+            EVP_DigestInit(mdctx, evp)
+            EVP_DigestUpdate(mdctx, message, message_len)
+            EVP_DigestFinal_ex(mdctx, buffer, len)
+            EVP_MD_CTX_free(mdctx)
+            return Data(bytes: buffer, count: Int(len.pointee))
+        #else
+            let evp = algorithm.EVP
+            let digest = wolfSSL_EVP_MD_size(evp)
+            let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
+            let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
+            defer {
+                buffer.deallocate()
+                len.deallocate()
+            }
+            let mdctx = wolfSSL_EVP_MD_CTX_new()
+            wolfSSL_EVP_DigestInit(mdctx, evp)
+            wolfSSL_EVP_DigestUpdate(mdctx, message, message_len)
+            wolfSSL_EVP_DigestFinal_ex(mdctx, buffer, len)
+            wolfSSL_EVP_MD_CTX_free(mdctx)
+            return Data(bytes: buffer, count: Int(len.pointee))
+        #endif
     }
 }
