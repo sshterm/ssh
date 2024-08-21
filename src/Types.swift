@@ -82,6 +82,68 @@ public enum HostkeyType: String, CaseIterable {
     }
 }
 
+// Hostkey 结构体用于存储主机密钥的信息。
+// data 属性存储了密钥的数据。
+// type 属性表示密钥的类型。
+public struct Hostkey {
+    public let data: Data
+    public let type: HostkeyType
+}
+
+/// SSH方法枚举，表示SSH协议中可以使用的不同方法。
+/// 这些方法包括密钥交换、主机密钥验证、加密算法、消息认证码、压缩算法和语言等。
+public enum SSHMethod: String, CaseIterable {
+    /// 密钥交换方法
+    case kex
+    /// 主机密钥验证方法
+    case hostkey
+    /// 客户端到服务器的加密算法
+    case crypt_cs
+    /// 服务器到客户端的加密算法
+    case crypt_sc
+    /// 客户端到服务器的消息认证码
+    case mac_cs
+    /// 服务器到客户端的消息认证码
+    case mac_sc
+    /// 客户端到服务器的压缩算法
+    case comp_cs
+    /// 服务器到客户端的压缩算法
+    case comp_sc
+    /// 客户端到服务器的语言选项
+    case lang_cs
+    /// 服务器到客户端的语言选项
+    case lang_sc
+    /// 签名算法0
+    case sign_algo0
+
+    var int32: Int32 {
+        switch self {
+        case .kex:
+            LIBSSH2_METHOD_KEX
+        case .hostkey:
+            LIBSSH2_METHOD_HOSTKEY
+        case .crypt_cs:
+            LIBSSH2_METHOD_CRYPT_CS
+        case .crypt_sc:
+            LIBSSH2_METHOD_CRYPT_SC
+        case .mac_cs:
+            LIBSSH2_METHOD_MAC_CS
+        case .mac_sc:
+            LIBSSH2_METHOD_MAC_SC
+        case .comp_cs:
+            LIBSSH2_METHOD_COMP_CS
+        case .comp_sc:
+            LIBSSH2_METHOD_COMP_SC
+        case .lang_cs:
+            LIBSSH2_METHOD_LANG_CS
+        case .lang_sc:
+            LIBSSH2_METHOD_LANG_SC
+        case .sign_algo0:
+            LIBSSH2_METHOD_SIGN_ALGO
+        }
+    }
+}
+
 public enum FileType {
     case link // 链接
     case regularFile // 普通文件

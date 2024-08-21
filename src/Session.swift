@@ -49,6 +49,10 @@ public extension SSH {
 
             self.rawSession = libssh2_session_init_ex(nil, nil, nil, Unmanaged.passUnretained(self).toOpaque())
 
+            _ = self.methods.map { (key: SSHMethod, value: String) in
+                libssh2_session_method_pref(self.rawSession, key.int32, value)
+            }
+
             libssh2_trace(self.rawSession, self.debug.trace)
             libssh2_trace_sethandler(self.rawSession, nil, trace)
             libssh2_session_set_blocking(self.rawSession, self.blocking ? 1 : 0)
@@ -301,14 +305,6 @@ public extension SSH {
         return data.fingerprint
     }
 
-    // Hostkey 结构体用于存储主机密钥的信息。
-    // data 属性存储了密钥的数据。
-    // type 属性表示密钥的类型。
-    struct Hostkey {
-        public let data: Data
-        public let type: HostkeyType
-    }
-
     /// 返回当前会话的主机密钥信息。
     /// 如果会话无效或无法获取主机密钥，则返回nil。
     func hostkey() -> Hostkey? {
@@ -325,6 +321,19 @@ public extension SSH {
             return nil
         }
         return Hostkey(data: Data(bytes: key, count: len.pointee), type: HostkeyType(rawValue: type.pointee))
+    }
+
+    /// 返回指定类型的SSH协议字符串。
+    /// - Parameter type: SSH方法的类型。
+    /// - Returns: 如果成功获取到方法字符串，则返回该字符串，否则返回nil。
+    func methods(_ type: SSHMethod) -> String? {
+        guard let rawSession = rawSession else {
+            return nil
+        }
+        guard let methods = libssh2_session_methods(rawSession, type.int32) else {
+            return nil
+        }
+        return String(cString: methods)
     }
 
     /// 用户认证列表

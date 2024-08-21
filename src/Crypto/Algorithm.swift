@@ -71,13 +71,11 @@ public enum Algorithm: String, CaseIterable {
         }
     #endif
     // 返回算法的摘要长度
-    #if OPEN_SSL
-        public var digest: Int {
+    public var digest: Int {
+        #if OPEN_SSL
             Int(EVP_MD_get_size(EVP))
-        }
-    #else
-        public var digest: Int {
+        #else
             Int(wolfSSL_EVP_MD_size(EVP))
-        }
-    #endif
+        #endif
+    }
 }

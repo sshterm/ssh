@@ -22,6 +22,9 @@ public class SSH {
     /// 是否启用压缩。‌
     public let compress: Bool
 
+    // 用于存储和管理 SSH 方法及其描述。
+    public let methods: [SSHMethod: String]
+
     /// 是否为阻塞模式。‌
     public let blocking: Bool
 
@@ -62,21 +65,24 @@ public class SSH {
     public var channelDelegate: ChannelDelegate?
 
     /// 初始化SSH连接参数并启动libssh2库
-    ///
+    /// 该初始化方法用于设置SSH连接的各项参数，并启动libssh2库以准备进行SSH连接。
+    /// 参数包括远程主机地址、端口、用户名、连接超时时间、是否启用压缩、阻塞模式以及调试类型。
     /// - Parameters:
-    ///   - host: 远程主机地址
-    ///   - port: 远程主机端口，默认为22
-    ///   - user: 连接用户名
-    ///   - timeout: 连接超时时间，默认为15秒
-    ///   - compress: 是否启用压缩，默认为true
-    ///   - blocking: 是否阻塞模式，默认为true
-    ///   - debug: 调试类型，默认为无
-    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, debug: [DebugType] = [.none]) {
+    ///   - host: 远程主机地址，必填。
+    ///   - port: 远程主机端口，默认为22。
+    ///   - user: 连接用户名，必填。
+    ///   - timeout: 连接超时时间，默认为15秒。
+    ///   - compress: 是否启用压缩，默认为true。
+    ///   - methods: SSH方法及其对应的字符串参数，使用字典表示，默认为空字典。
+    ///   - blocking: 是否阻塞模式，默认为true。
+    ///   - debug: 调试类型，默认为无。
+    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, methods: [SSHMethod: String] = [:], blocking: Bool = true, debug: [DebugType] = [.none]) {
         self.host = host
         self.port = port
         self.user = user
         self.timeout = timeout
         self.compress = compress
+        self.methods = methods
         self.debug = debug
         self.blocking = blocking
         libssh2_init(0)
