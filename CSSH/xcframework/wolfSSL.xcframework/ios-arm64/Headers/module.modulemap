@@ -1,4 +1,4 @@
 module wolfSSL{
-    header "wolfSSL.h"
+    header "wolfssl.h"
     export *
 }
