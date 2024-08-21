@@ -90,15 +90,14 @@ public enum FileType {
     case blockSpecialFile // 块特殊文件
     case fifo // 先进先出队列
     case socket // 套接字
+    case unknown // 无法识别的文件类型
 
     /**
      根据整数值初始化文件类型枚举
-
      - Parameter rawValue: 文件类型的整数值表示
      - Returns: 对应的FileType枚举值，如果无法识别则返回nil
      */
-    public init?(rawValue: Int32) {
-        // 使用位运算与LIBSSH2_SFTP_S_IFMT进行匹配，确定文件类型
+    public init(rawValue: Int32) {
         switch rawValue & LIBSSH2_SFTP_S_IFMT {
         case LIBSSH2_SFTP_S_IFLNK:
             self = .link
@@ -115,7 +114,7 @@ public enum FileType {
         case LIBSSH2_SFTP_S_IFSOCK:
             self = .socket
         default:
-            return nil // 无法识别的文件类型
+            self = .unknown
         }
     }
 }

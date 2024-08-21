@@ -65,10 +65,7 @@ public extension SSH {
                     guard let longname = String(data: Data(bytes: longEntry, count: strlen(longEntry)), encoding: .utf8) else {
                         continue
                     }
-                    guard let att = FileAttributes(name: name, longname: longname, attributes: attrs) else {
-                        continue
-                    }
-                    data.append(att)
+                    data.append(FileAttributes(name: name, longname: longname, attributes: attrs))
                 }
             } while rc > 0
             return data

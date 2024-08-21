@@ -28,17 +28,12 @@ public struct FileStat {
 
     /**
      初始化FileStat结构体
-
      - Parameters:
         - attributes: LIBSSH2_SFTP_ATTRIBUTES类型的属性，包含文件的各种信息
-
      - Returns: 如果能成功解析attributes，则返回FileStat实例，否则返回nil
      */
-    init?(attributes: LIBSSH2_SFTP_ATTRIBUTES) {
-        // 尝试从attributes.permissions中获取fileType，如果失败则返回nil
-        guard let fileType = FileType(rawValue: Int32(attributes.permissions)) else { return nil }
-        self.fileType = fileType
-
+    init(attributes: LIBSSH2_SFTP_ATTRIBUTES) {
+        fileType = FileType(rawValue: Int32(attributes.permissions))
         // 直接赋值其他属性
         size = attributes.filesize
         userId = attributes.uid
@@ -90,9 +85,8 @@ public struct FileAttributes {
 
      - Returns: 如果fileType能够从attributes.permissions正确解析，则返回FileAttributes实例，否则返回nil
      */
-    init?(attributes: LIBSSH2_SFTP_ATTRIBUTES) {
-        guard let fileType = FileType(rawValue: Int32(attributes.permissions)) else { return nil }
-        self.fileType = fileType
+    init(attributes: LIBSSH2_SFTP_ATTRIBUTES) {
+        fileType = FileType(rawValue: Int32(attributes.permissions))
         name = ""
         longname = ""
         size = attributes.filesize
@@ -115,9 +109,8 @@ public struct FileAttributes {
 
      - Returns: 如果fileType能够从attributes.permissions正确解析，则返回FileAttributes实例，否则返回nil
      */
-    init?(name: String, longname: String, attributes: LIBSSH2_SFTP_ATTRIBUTES) {
-        guard let fileType = FileType(rawValue: Int32(attributes.permissions)) else { return nil }
-        self.fileType = fileType
+    init(name: String, longname: String, attributes: LIBSSH2_SFTP_ATTRIBUTES) {
+        fileType = FileType(rawValue: Int32(attributes.permissions))
         self.name = name
         self.longname = longname
         size = attributes.filesize
