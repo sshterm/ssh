@@ -14,3 +14,7 @@ pod 'SSH', :subspecs => ['OpenSSL'] , :git => 'https://github.com/sshterm/ssh.gi
 ```
 pod 'SSH', :subspecs => ['wolfSSL'] ,:git => 'https://github.com/sshterm/ssh.git'
 ```
+
+# 关于libssh2
+
+官方的 libssh2-1.11.0 克隆版本，未做任何修改
