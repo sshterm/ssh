@@ -26,11 +26,13 @@ public extension Crypto {
     ///   - algorithm: 要使用的哈希算法。
     /// - Returns: 包含计算出的HMAC值的Data对象。
     func hmac(_ message: UnsafeRawPointer, message_len: Int, key: UnsafeRawPointer, key_len: Int32, algorithm: Algorithm) -> Data {
-        let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: algorithm.digest)
+        let evp = algorithm.EVP
+        let digest = wolfSSL_EVP_MD_size(evp)
+        let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
         defer {
             buffer.deallocate()
         }
-        wolfSSL_HMAC(algorithm.EVP, key, key_len, message, message_len, buffer, nil)
+        wolfSSL_HMAC(evp, key, key_len, message, message_len, buffer, nil)
         return Data(bytes: buffer, count: algorithm.digest)
     }
 }

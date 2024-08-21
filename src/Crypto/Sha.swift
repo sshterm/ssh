@@ -30,14 +30,16 @@ public extension Crypto {
     // - algorithm: 使用的 SHA 算法
     /// - Returns: 哈希计算后的Data对象
     func sha(_ message: UnsafeRawPointer, message_len: Int, algorithm: Algorithm) -> Data {
-        let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: algorithm.digest)
-        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: algorithm.digest)
+        let evp = algorithm.EVP
+        let digest = wolfSSL_EVP_MD_size(evp)
+        let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
+        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: Int(digest))
         defer {
             buffer.deallocate()
             len.deallocate()
         }
         let mdctx = wolfSSL_EVP_MD_CTX_new()
-        wolfSSL_EVP_DigestInit(mdctx, algorithm.EVP)
+        wolfSSL_EVP_DigestInit(mdctx, evp)
         wolfSSL_EVP_DigestUpdate(mdctx, message, message_len)
         wolfSSL_EVP_DigestFinal_ex(mdctx, buffer, len)
         wolfSSL_EVP_MD_CTX_free(mdctx)
