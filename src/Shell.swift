@@ -79,7 +79,7 @@ public extension SSH {
             repeat {
                 let (stdout, rc, dtderr, erc) = self.read()
                 guard rc >= 0 || erc >= 0 else {
-                    if (rc == LIBSSH2_ERROR_SOCKET_RECV) || erc == LIBSSH2_ERROR_SOCKET_RECV {
+                    guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
                         self.closeShell()
                         return
                     }
@@ -87,8 +87,7 @@ public extension SSH {
                 }
                 if rc > 0 {
                     self.onData(stdout, true)
-                }
-                if erc > 0 {
+                } else if erc > 0 {
                     self.onData(dtderr, false)
                 }
                 if self.receivedEOF {

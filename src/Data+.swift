@@ -17,12 +17,16 @@ public extension Data {
         return buffer
     }
 
+    var hex: [String] {
+        map { String(format: "%02hhX", $0) }
+    }
+
     var hexString: String {
-        map { String(format: "%02hhX", $0) }.joined()
+        hex.joined()
     }
 
     var fingerprint: String {
-        map { String(format: "%02hhX", $0) }.joined(separator: ":")
+        hex.joined(separator: ":")
     }
 
     var string: String {
