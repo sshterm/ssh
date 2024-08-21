@@ -18,40 +18,6 @@ public enum PtyType: String, CaseIterable {
     }
 }
 
-public enum FingerprintHashType: String {
-    // 枚举值包括md5, sha1, sha256
-    case md5, sha1, sha256
-
-    // 返回对应哈希算法的摘要长度
-    var digestInt32: Int32 {
-        Int32(digest)
-    }
-
-    // 根据不同的哈希类型返回对应的摘要长度，使用Int32类型
-    var digest: Int {
-        switch self {
-        case .md5:
-            Algorithm.md5.digest
-        case .sha1:
-            Algorithm.sha1.digest
-        case .sha256:
-            Algorithm.sha256.digest
-        }
-    }
-
-    // 根据不同的哈希类型返回对应的LIBSSH2常量值
-    var hashType: Int32 {
-        switch self {
-        case .md5:
-            LIBSSH2_HOSTKEY_HASH_MD5
-        case .sha1:
-            LIBSSH2_HOSTKEY_HASH_SHA1
-        case .sha256:
-            LIBSSH2_HOSTKEY_HASH_SHA256
-        }
-    }
-}
-
 public enum DebugType: String, CaseIterable {
     // 定义调试类型枚举，包括传输、密钥交换、认证、连接、SCP、SFTP、错误、公钥、套接字、全部和无
     case trans, kex, auth, conn, scp, sftp, error, publickey, socket, all, none

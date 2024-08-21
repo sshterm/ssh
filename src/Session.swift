@@ -286,21 +286,31 @@ public extension SSH {
         }
     }
 
-    /// 计算并返回会话指纹
-    /// - Parameter type: 指纹哈希类型，默认为.sha1
-    /// - Returns: 返回计算得到的指纹字符串，如果出错则返回nil
-    func fingerprint(_ type: FingerprintHashType = .sha1) async -> String? {
-        await call {
-            guard let rawSession = self.rawSession else {
-                return nil
-            }
-            let hashPointer = libssh2_hostkey_hash(rawSession, type.hashType)
-            guard let hashPointer else {
-                return nil
-            }
-            let hash = UnsafeRawPointer(hashPointer).assumingMemoryBound(to: UInt8.self)
-            return (0 ..< type.digest).map { String(format: "%02hhX", hash[$0]) }.joined(separator: ":")
+    // 返回基于指定算法的主机密钥指纹
+    /// - Parameter algorithm: 指定的哈希算法，默认为SHA1
+    /// - Returns: 主机密钥的指纹字符串，如果无法生成则返回nil
+    func fingerprint(_ algorithm: Algorithm = .sha1) -> String? {
+        guard let hostkey = hostkey else {
+            return nil
         }
+        let data = Crypto.shared.sha(hostkey, algorithm: algorithm)
+        return data.fingerprint
+    }
+
+    // 获取会话的主机密钥数据
+    /// - Returns: 主机密钥的Data对象，如果无法获取则返回nil
+    var hostkey: Data? {
+        guard let rawSession = rawSession else {
+            return nil
+        }
+        let len = UnsafeMutablePointer<Int>.allocate(capacity: 0)
+        defer {
+            len.deallocate()
+        }
+        guard let key = libssh2_session_hostkey(rawSession, len, nil) else {
+            return nil
+        }
+        return Data(bytes: key, count: len.pointee)
     }
 
     /// 用户认证列表

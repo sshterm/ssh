@@ -21,6 +21,10 @@ public extension Data {
         map { String(format: "%02hhX", $0) }.joined()
     }
 
+    var fingerprint: String {
+        map { String(format: "%02hhX", $0) }.joined(separator: ":")
+    }
+
     var string: String {
         String(data: self, encoding: .utf8) ?? ""
     }
