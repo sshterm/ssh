@@ -6,7 +6,7 @@ import Foundation
 import wolfSSL
 
 public enum Algorithm: String, CaseIterable {
-    case md5, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512, ripemd160
+    case md5, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
 
     // 返回对应算法的OpaquePointer，用于后续的加密操作
     public var EVP: UnsafePointer<WOLFSSL_EVP_MD>? {
@@ -35,8 +35,6 @@ public enum Algorithm: String, CaseIterable {
             wolfSSL_EVP_sha3_384()
         case .sha3_512:
             wolfSSL_EVP_sha3_512()
-        case .ripemd160:
-            wolfSSL_EVP_ripemd160()
         }
     }
 
@@ -72,8 +70,6 @@ public enum Algorithm: String, CaseIterable {
             48
         case .sha3_512:
             64
-        case .ripemd160:
-            20
         }
     }
 }
