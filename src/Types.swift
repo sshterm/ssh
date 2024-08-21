@@ -116,29 +116,42 @@ public enum SSHMethod: String, CaseIterable {
     /// 签名算法0
     case sign_algo0
 
+    /// 根据当前枚举值返回对应的LIBSSH2方法常量。
+    /// - Returns: 对应的LIBSSH2方法常量。
     var int32: Int32 {
         switch self {
         case .kex:
+            /// 返回LIBSSH2密钥交换方法的常量。
             LIBSSH2_METHOD_KEX
         case .hostkey:
+            /// 返回LIBSSH2主机密钥方法的常量。
             LIBSSH2_METHOD_HOSTKEY
         case .crypt_cs:
+            /// 返回LIBSSH2客户端加密方法的常量。
             LIBSSH2_METHOD_CRYPT_CS
         case .crypt_sc:
+            /// 返回LIBSSH2服务器加密方法的常量。
             LIBSSH2_METHOD_CRYPT_SC
         case .mac_cs:
+            /// 返回LIBSSH2客户端MAC方法的常量。
             LIBSSH2_METHOD_MAC_CS
         case .mac_sc:
+            /// 返回LIBSSH2服务器MAC方法的常量。
             LIBSSH2_METHOD_MAC_SC
         case .comp_cs:
+            /// 返回LIBSSH2客户端压缩方法的常量。
             LIBSSH2_METHOD_COMP_CS
         case .comp_sc:
+            /// 返回LIBSSH2服务器压缩方法的常量。
             LIBSSH2_METHOD_COMP_SC
         case .lang_cs:
+            /// 返回LIBSSH2客户端语言方法的常量。
             LIBSSH2_METHOD_LANG_CS
         case .lang_sc:
+            /// 返回LIBSSH2服务器语言方法的常量。
             LIBSSH2_METHOD_LANG_SC
         case .sign_algo0:
+            /// 返回LIBSSH2签名算法方法的常量。
             LIBSSH2_METHOD_SIGN_ALGO
         }
     }

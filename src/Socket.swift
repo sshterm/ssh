@@ -127,9 +127,7 @@ public extension SSH {
      关闭Socket连接
      */
     func closeSocket() {
-        // 关闭Socket的读写操作
         shutdown()
-        // 关闭socket并设置为nil
         socket?.close()
         socket = nil
     }

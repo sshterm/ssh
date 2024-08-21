@@ -10,12 +10,24 @@ import Foundation
 #endif
 // 提供HMAC加密功能
 public extension Crypto {
-    // 对外提供的HMAC加密接口，接受String类型的消息和密钥
+    /// 使用指定的算法和密钥计算给定消息的HMAC（基于哈希的消息认证码）
+    ///
+    /// - Parameters:
+    ///   - message: 需要计算HMAC的消息字符串
+    ///   - key: 用于计算HMAC的密钥字符串
+    ///   - algorithm: 指定的哈希算法
+    /// - Returns: 计算得到的HMAC数据
     func hmac(_ message: String, key: String, algorithm: Algorithm) -> Data {
         hmac(message.pointerCChar, message_len: message.count, key: key.pointerCChar, key_len: key.countInt32, algorithm: algorithm)
     }
 
-    // 内部的HMAC加密方法，接受Data类型的消息和密钥
+    /// 使用指定的算法和密钥对消息进行HMAC（基于哈希的消息认证码）加密。
+    ///
+    /// - Parameters:
+    ///   - message: 需要进行HMAC加密的消息数据。
+    ///   - key: 用于HMAC加密的密钥数据。
+    ///   - algorithm: 加密算法，例如SHA256。
+    /// - Returns: 返回加密后的HMAC数据。
     func hmac(_ message: Data, key: Data, algorithm: Algorithm) -> Data {
         hmac(message.pointerCChar, message_len: message.count, key: key.pointerCChar, key_len: key.countInt32, algorithm: algorithm)
     }

@@ -14,10 +14,12 @@ public extension String {
         }
     }
 
+    // 将当前字符串的长度转换为无符号32位整数类型
     var countUInt32: UInt32 {
         UInt32(count)
     }
 
+    // 将当前字符串的长度转换为有符号32位整数类型
     var countInt32: Int32 {
         Int32(count)
     }
