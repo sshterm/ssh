@@ -18,3 +18,11 @@ pod 'SSH', :subspecs => ['wolfSSL'] ,:git => 'https://github.com/sshterm/ssh.git
 # 关于libssh2
 
 https://github.com/libssh2/libssh2
+
+# 关于OpenSSL
+
+https://github.com/openssl/openssl
+
+# 关于wolfSSL
+
+https://github.com/wolfSSL/wolfssl
