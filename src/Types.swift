@@ -55,28 +55,34 @@ public enum HostkeyType: String, CaseIterable {
     // 定义了主机密钥的类型，包括未知、RSA、DSS、ECDSA_256、ECDSA_384、ECDSA_521和ed25519
     case unknown, rsa, dss, ecdsa_256, ecdsa_384, ecdsa_521, ed25519
 
-    /**
-     根据整型原始值初始化HostkeyType枚举实例
-     - Parameter rawValue: 整型原始值，对应不同的主机密钥类型
-     - Returns: 返回对应的HostkeyType枚举实例，如果原始值不匹配则返回nil
-     */
+    /// 根据原始值初始化HostKey类型
+    /// - Parameter rawValue: 主机密钥的原始整数值
     public init(rawValue: Int32) {
+        // 使用switch语句根据不同的原始值设置对应的HostKey类型
         switch rawValue {
         case LIBSSH2_HOSTKEY_TYPE_UNKNOWN:
+            // 如果原始值表示未知类型，则设置为unknown
             self = .unknown
         case LIBSSH2_HOSTKEY_TYPE_RSA:
+            // 如果原始值表示RSA类型，则设置为rsa
             self = .rsa
         case LIBSSH2_HOSTKEY_TYPE_DSS:
+            // 如果原始值表示DSS类型，则设置为dss
             self = .dss
         case LIBSSH2_HOSTKEY_TYPE_ECDSA_256:
+            // 如果原始值表示256位ECDSA类型，则设置为ecdsa_256
             self = .ecdsa_256
         case LIBSSH2_HOSTKEY_TYPE_ECDSA_384:
+            // 如果原始值表示384位ECDSA类型，则设置为ecdsa_384
             self = .ecdsa_384
         case LIBSSH2_HOSTKEY_TYPE_ECDSA_521:
+            // 如果原始值表示521位ECDSA类型，则设置为ecdsa_521
             self = .ecdsa_521
         case LIBSSH2_HOSTKEY_TYPE_ED25519:
+            // 如果原始值表示ED25519类型，则设置为ed25519
             self = .ed25519
         default:
+            // 对于未知的原始值，默认设置为unknown
             self = .unknown
         }
     }
