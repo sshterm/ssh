@@ -33,6 +33,6 @@ public extension Crypto {
             buffer.deallocate()
         }
         wolfSSL_HMAC(evp, key, key_len, message, message_len, buffer, nil)
-        return Data(bytes: buffer, count: algorithm.digest)
+        return Data(bytes: buffer, count: Int(digest))
     }
 }

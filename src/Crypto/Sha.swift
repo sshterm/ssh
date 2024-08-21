@@ -33,7 +33,7 @@ public extension Crypto {
         let evp = algorithm.EVP
         let digest = wolfSSL_EVP_MD_size(evp)
         let buffer = UnsafeMutablePointer<Int8>.allocate(capacity: Int(digest))
-        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: Int(digest))
+        let len = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
         defer {
             buffer.deallocate()
             len.deallocate()
