@@ -47,7 +47,7 @@
 #ifdef LIBSSH2_WOLFSSL
 
 #include <wolfssl/options.h>
-#include <wolfssl/openssl/ecdh.h>
+#include <openssl/ecdh.h>
 
 #if defined(NO_DSA) || defined(HAVE_FIPS)
 #define OPENSSL_NO_DSA
@@ -77,24 +77,24 @@
 
 #endif /* LIBSSH2_WOLFSSL */
 
-#include <wolfssl/openssl/opensslconf.h>
-#include <wolfssl/openssl/sha.h>
-#include <wolfssl/openssl/rsa.h>
+#include <openssl/opensslconf.h>
+#include <openssl/sha.h>
+#include <openssl/rsa.h>
 #ifndef OPENSSL_NO_ENGINE
-#include <wolfssl/openssl/engine.h>
+#include <openssl/engine.h>
 #endif
 #ifndef OPENSSL_NO_DSA
-#include <wolfssl/openssl/dsa.h>
+#include <openssl/dsa.h>
 #endif
 #ifndef OPENSSL_NO_MD5
-#include <wolfssl/openssl/md5.h>
+#include <openssl/md5.h>
 #endif
-#include <wolfssl/openssl/err.h>
-#include <wolfssl/openssl/evp.h>
-#include <wolfssl/openssl/hmac.h>
-#include <wolfssl/openssl/bn.h>
-#include <wolfssl/openssl/pem.h>
-#include <wolfssl/openssl/rand.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/bn.h>
+#include <openssl/pem.h>
+#include <openssl/rand.h>
 
 #if (OPENSSL_VERSION_NUMBER >= 0x10100000L && \
     !defined(LIBRESSL_VERSION_NUMBER)) || defined(LIBSSH2_WOLFSSL) || \
