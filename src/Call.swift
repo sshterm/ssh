@@ -78,23 +78,24 @@ extension SSH {
         job.addOperation(operation)
     }
 
-    /// 调试信息输出函数
-    /// - Parameters:
-    ///   - sess: 会话指针
-    ///   - reason: 原因代码
-    ///   - message: 包含调试信息的C字符串指针
-    ///   - messageLen: 调试信息字符串的长度
-    ///   - language: 语言指针
-    ///   - languageLen: 语言字符串的长度
-    func debug(sess _: UnsafeRawPointer, reason _: CInt, message: UnsafePointer<CChar>, messageLen: CInt, language _: UnsafePointer<CChar>, languageLen _: CInt) {
-        guard let msg = String(data: Data(bytes: message, count: Int(messageLen)), encoding: .utf8) else {
-            return
+    #if DEBUG
+        /// 调试信息输出函数
+        /// - Parameters:
+        ///   - sess: 会话指针
+        ///   - reason: 原因代码
+        ///   - message: 包含调试信息的C字符串指针
+        ///   - messageLen: 调试信息字符串的长度
+        ///   - language: 语言指针
+        ///   - languageLen: 语言字符串的长度
+        func debug(sess _: UnsafeRawPointer, reason _: CInt, message: UnsafePointer<CChar>, messageLen: CInt, language _: UnsafePointer<CChar>, languageLen _: CInt) {
+            guard let msg = String(data: Data(bytes: message, count: Int(messageLen)), encoding: .utf8) else {
+                return
+            }
+            addOperation {
+                self.sessionDelegate?.debug(ssh: self, message: msg)
+            }
         }
-        addOperation {
-            self.sessionDelegate?.debug(ssh: self, message: msg)
-        }
-    }
-
+    #endif
     // trace 函数用于记录消息，它接受一个 C 风格的字符串指针和字符串长度作为参数。
     // - Parameters:
     //   - message: 一个指向 C 风格字符串的 UnsafePointer，表示要记录的消息。

@@ -35,9 +35,11 @@ public extension SSH {
             let recv: recvType = { socket, buffer, length, flags, abstract in
                 SSH.getSSH(from: abstract).recv(socket: socket, buffer: buffer, length: length, flags: flags)
             }
-            let debug: debugType = { sess, reason, message, messageLen, language, languageLen, abstract in
-                SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
-            }
+            #if DEBUG
+                let debug: debugType = { sess, reason, message, messageLen, language, languageLen, abstract in
+                    SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
+                }
+            #endif
             let trace: libssh2_trace_handler_func = { sess, _, message, messageLen in
                 guard let message else {
                     return
@@ -55,7 +57,9 @@ public extension SSH {
             libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: UnsafeMutableRawPointer.self))
             libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: UnsafeMutableRawPointer.self))
             libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: UnsafeMutableRawPointer.self))
-            libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
+            #if DEBUG
+                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
+            #endif
             self.sessionTimeout = Int(self.timeout)
             let code = self.callSSH2 {
                 libssh2_session_handshake(self.rawSession, self.sockfd)
@@ -290,27 +294,37 @@ public extension SSH {
     /// - Parameter algorithm: 指定的哈希算法，默认为SHA1
     /// - Returns: 主机密钥的指纹字符串，如果无法生成则返回nil
     func fingerprint(_ algorithm: Algorithm = .sha1) -> String? {
-        guard let hostkey = hostkey else {
+        guard let key = hostkey() else {
             return nil
         }
-        let data = Crypto.shared.sha(hostkey, algorithm: algorithm)
+        let data = Crypto.shared.sha(key.data, algorithm: algorithm)
         return data.fingerprint
     }
 
-    // 获取会话的主机密钥数据
-    /// - Returns: 主机密钥的Data对象，如果无法获取则返回nil
-    var hostkey: Data? {
+    // Hostkey 结构体用于存储主机密钥的信息。
+    // data 属性存储了密钥的数据。
+    // type 属性表示密钥的类型。
+    struct Hostkey {
+        public let data: Data
+        public let type: HostkeyType
+    }
+
+    /// 返回当前会话的主机密钥信息。
+    /// 如果会话无效或无法获取主机密钥，则返回nil。
+    func hostkey() -> Hostkey? {
         guard let rawSession = rawSession else {
             return nil
         }
         let len = UnsafeMutablePointer<Int>.allocate(capacity: 0)
+        let type = UnsafeMutablePointer<Int32>.allocate(capacity: 0)
         defer {
             len.deallocate()
+            type.deallocate()
         }
-        guard let key = libssh2_session_hostkey(rawSession, len, nil) else {
+        guard let key = libssh2_session_hostkey(rawSession, len, type) else {
             return nil
         }
-        return Data(bytes: key, count: len.pointee)
+        return Hostkey(data: Data(bytes: key, count: len.pointee), type: HostkeyType(rawValue: type.pointee))
     }
 
     /// 用户认证列表

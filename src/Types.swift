@@ -51,6 +51,75 @@ public enum DebugType: String, CaseIterable {
     }
 }
 
+public enum HostkeyType: String, CaseIterable {
+    // 定义了主机密钥的类型，包括未知、RSA、DSS、ECDSA_256、ECDSA_384、ECDSA_521和ed25519
+    case unknown, rsa, dss, ecdsa_256, ecdsa_384, ecdsa_521, ed25519
+
+    /**
+     根据整型原始值初始化HostkeyType枚举实例
+     - Parameter rawValue: 整型原始值，对应不同的主机密钥类型
+     - Returns: 返回对应的HostkeyType枚举实例，如果原始值不匹配则返回nil
+     */
+    public init(rawValue: Int32) {
+        switch rawValue {
+        case LIBSSH2_HOSTKEY_TYPE_UNKNOWN:
+            self = .unknown
+        case LIBSSH2_HOSTKEY_TYPE_RSA:
+            self = .rsa
+        case LIBSSH2_HOSTKEY_TYPE_DSS:
+            self = .dss
+        case LIBSSH2_HOSTKEY_TYPE_ECDSA_256:
+            self = .ecdsa_256
+        case LIBSSH2_HOSTKEY_TYPE_ECDSA_384:
+            self = .ecdsa_384
+        case LIBSSH2_HOSTKEY_TYPE_ECDSA_521:
+            self = .ecdsa_521
+        case LIBSSH2_HOSTKEY_TYPE_ED25519:
+            self = .ed25519
+        default:
+            self = .unknown
+        }
+    }
+}
+
+public enum FileType {
+    case link // 链接
+    case regularFile // 普通文件
+    case directory // 目录
+    case characterSpecialFile // 字符特殊文件
+    case blockSpecialFile // 块特殊文件
+    case fifo // 先进先出队列
+    case socket // 套接字
+
+    /**
+     根据整数值初始化文件类型枚举
+
+     - Parameter rawValue: 文件类型的整数值表示
+     - Returns: 对应的FileType枚举值，如果无法识别则返回nil
+     */
+    public init?(rawValue: Int32) {
+        // 使用位运算与LIBSSH2_SFTP_S_IFMT进行匹配，确定文件类型
+        switch rawValue & LIBSSH2_SFTP_S_IFMT {
+        case LIBSSH2_SFTP_S_IFLNK:
+            self = .link
+        case LIBSSH2_SFTP_S_IFREG:
+            self = .regularFile
+        case LIBSSH2_SFTP_S_IFDIR:
+            self = .directory
+        case LIBSSH2_SFTP_S_IFCHR:
+            self = .characterSpecialFile
+        case LIBSSH2_SFTP_S_IFBLK:
+            self = .blockSpecialFile
+        case LIBSSH2_SFTP_S_IFIFO:
+            self = .fifo
+        case LIBSSH2_SFTP_S_IFSOCK:
+            self = .socket
+        default:
+            return nil // 无法识别的文件类型
+        }
+    }
+}
+
 extension [DebugType] {
     var trace: Int32 {
         var traces: Int32 = 0

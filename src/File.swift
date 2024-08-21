@@ -4,45 +4,6 @@
 
 import Foundation
 
-public enum FileType {
-    // 定义文件类型枚举
-    case link // 链接文件
-    case regularFile // 普通文件
-    case directory // 目录
-    case characterSpecialFile // 字符特殊文件
-    case blockSpecialFile // 块特殊文件
-    case fifo // 管道文件
-    case socket // 套接字文件
-
-    /**
-     根据整数值初始化文件类型枚举
-
-     - Parameter rawValue: 文件类型的整数值表示
-     - Returns: 对应的FileType枚举值，如果无法识别则返回nil
-     */
-    public init?(rawValue: Int32) {
-        // 使用位运算与LIBSSH2_SFTP_S_IFMT进行匹配，确定文件类型
-        switch rawValue & LIBSSH2_SFTP_S_IFMT {
-        case LIBSSH2_SFTP_S_IFLNK:
-            self = .link
-        case LIBSSH2_SFTP_S_IFREG:
-            self = .regularFile
-        case LIBSSH2_SFTP_S_IFDIR:
-            self = .directory
-        case LIBSSH2_SFTP_S_IFCHR:
-            self = .characterSpecialFile
-        case LIBSSH2_SFTP_S_IFBLK:
-            self = .blockSpecialFile
-        case LIBSSH2_SFTP_S_IFIFO:
-            self = .fifo
-        case LIBSSH2_SFTP_S_IFSOCK:
-            self = .socket
-        default:
-            return nil // 无法识别的文件类型
-        }
-    }
-}
-
 public struct FileStat {
     // 文件类型
     public let fileType: FileType
