@@ -38,38 +38,8 @@ public enum Algorithm: String, CaseIterable {
         }
     }
 
-    // 返回算法的摘要长度，以Int类型表示
-    public var digestInt32: Int32 {
-        Int32(digest)
-    }
-
-    // 返回算法的摘要长度，以Int32类型表示
+    // 返回算法的摘要长度
     public var digest: Int {
-        switch self {
-        case .md5:
-            16
-        case .sha1:
-            20
-        case .sha224:
-            28
-        case .sha256:
-            32
-        case .sha384:
-            48
-        case .sha512:
-            64
-        case .sha512_224:
-            28
-        case .sha512_256:
-            32
-        case .sha3_224:
-            28
-        case .sha3_256:
-            32
-        case .sha3_384:
-            48
-        case .sha3_512:
-            64
-        }
+        Int(wolfSSL_EVP_MD_size(EVP))
     }
 }
