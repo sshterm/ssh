@@ -325,6 +325,14 @@ public extension SSH {
         return Hostkey(data: Data(bytes: key, count: len.pointee), type: HostkeyType(rawValue: type.pointee))
     }
 
+    // isCompressed 属性用于检查会话是否被压缩。
+    // 它通过检查压缩方法的字符串前缀是否为 "zlib" 来确定。
+    // 如果会话的客户端到服务器（.comp_cs）或服务器到客户端（.comp_sc）的压缩方法都是以 "zlib" 开头，
+    // 则认为会话是压缩的，返回 true；否则返回 false。
+    var isCompressed: Bool {
+        methods(.comp_cs)?.hasPrefix("zlib") ?? false && methods(.comp_sc)?.hasPrefix("zlib") ?? false
+    }
+
     /// 返回指定类型的SSH协议字符串。
     /// - Parameter type: SSH方法的类型。
     /// - Returns: 如果成功获取到方法字符串，则返回该字符串，否则返回nil。
