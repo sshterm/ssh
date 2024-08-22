@@ -123,6 +123,14 @@ extension SSH {
             let msg = Data(bytes: message, count: Int(messageLen))
             print("断开:\(msg)")
         #endif
+        sessionDelegate?.disconnect(ssh: self)
         close()
     }
+
+    #if DEBUG
+        public func disconnect() {
+            close()
+            sessionDelegate?.disconnect(ssh: self)
+        }
+    #endif
 }
