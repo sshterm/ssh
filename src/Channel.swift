@@ -16,7 +16,7 @@ public extension SSH {
             }
             self.closeChannel()
             let rawChannel = self.callSSH2 {
-                libssh2_channel_open_ex(rawSession, "session", 7, 2 * 1024 * 1024, 32768, "SSH Term", 8)
+                libssh2_channel_open_ex(rawSession, "session", 7, 2 * 1024 * 1024, 32768, nil, 0)
             }
             guard let rawChannel else {
                 return false
