@@ -287,13 +287,14 @@ public extension SSH {
         #if DEBUG
             print("关闭SSH通道")
         #endif
+
+        lock.lock()
+        defer {
+            self.lock.unlock()
+        }
         if let rawChannel {
-            _ = callSSH2 {
-                libssh2_channel_send_eof(rawChannel)
-            }
-            _ = callSSH2 {
-                libssh2_channel_close(rawChannel)
-            }
+            libssh2_channel_set_blocking(rawChannel, 1)
+            libssh2_channel_close(rawChannel)
             libssh2_channel_free(rawChannel)
             self.rawChannel = nil
             addOperation {

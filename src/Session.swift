@@ -390,14 +390,11 @@ public extension SSH {
         addOperation {
             self.sessionDelegate?.disconnect(ssh: self)
         }
+        job.cancelAllOperations()
+        cancelSources()
         shutdown(SHUT_RD)
-        lock.lock()
-        defer {
-            self.lock.unlock()
-        }
         closeSFTP()
         closeChannel()
-
         if let rawSession {
             _ = callSSH2 {
                 libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
