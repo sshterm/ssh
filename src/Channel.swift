@@ -296,10 +296,10 @@ public extension SSH {
             libssh2_channel_set_blocking(rawChannel, 1)
             libssh2_channel_close(rawChannel)
             libssh2_channel_free(rawChannel)
-            self.rawChannel = nil
             addOperation {
                 self.channelDelegate?.disconnect(ssh: self)
             }
         }
+        rawChannel = nil
     }
 }

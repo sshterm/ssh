@@ -411,5 +411,6 @@ public extension SSH {
             libssh2_session_free(rawSession)
         }
         rawSession = nil
+        socket = nil
     }
 }

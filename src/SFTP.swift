@@ -606,7 +606,7 @@ public extension SSH {
     func closeSFTP() {
         if let rawSFTP {
             libssh2_sftp_shutdown(rawSFTP)
-            self.rawSFTP = nil
         }
+        rawSFTP = nil
     }
 }

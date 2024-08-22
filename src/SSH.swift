@@ -98,7 +98,6 @@ public class SSH {
 
     /// 析构函数，‌用于清理资源。‌
     deinit {
-        close()
         libssh2_exit()
     }
 }
