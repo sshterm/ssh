@@ -73,8 +73,9 @@ public extension SSH {
                 self.closeSession()
                 return false
             }
-            self.addOperation {
-                self.sessionDelegate?.connect(ssh: self)
+            guard self.sessionDelegate?.connect(ssh: self, fingerprint: self.fingerprint() ?? "") ?? true else {
+                self.closeSession()
+                return false
             }
             return true
         }
