@@ -54,7 +54,7 @@ public extension SSH {
             return Int(-errno)
         }
         addOperation {
-            self.sessionDelegate?.send(ssh: self, size: size)
+            await self.sessionDelegate?.send(ssh: self, size: size)
         }
         return size
     }
@@ -74,7 +74,7 @@ public extension SSH {
             return Int(-errno)
         }
         addOperation {
-            self.sessionDelegate?.recv(ssh: self, size: size)
+            await self.sessionDelegate?.recv(ssh: self, size: size)
         }
         return size
     }

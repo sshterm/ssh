@@ -79,6 +79,17 @@ extension SSH {
         job.addOperation(operation)
     }
 
+    /// 向任务队列中添加一个操作，该操作会异步执行传入的回调函数。
+    /// - Parameter callback: 一个异步闭包，将在BlockOperation中执行。
+    func addOperation(_ callback: @escaping () async -> Void) {
+        let operation = BlockOperation {
+            Task {
+                await callback()
+            }
+        }
+        job.addOperation(operation)
+    }
+
     #if DEBUG
         /// 调试信息输出函数
         /// - Parameters:
@@ -93,10 +104,11 @@ extension SSH {
                 return
             }
             addOperation {
-                self.sessionDelegate?.debug(ssh: self, message: msg)
+                await self.sessionDelegate?.debug(ssh: self, message: msg)
             }
         }
     #endif
+
     // trace 函数用于记录消息，它接受一个 C 风格的字符串指针和字符串长度作为参数。
     // - Parameters:
     //   - message: 一个指向 C 风格字符串的 UnsafePointer，表示要记录的消息。
@@ -105,7 +117,9 @@ extension SSH {
         guard let msg = String(data: Data(bytes: message, count: messageLen), encoding: .utf8) else {
             return
         }
-        sessionDelegate?.trace(ssh: self, message: msg)
+        addOperation {
+            await self.sessionDelegate?.trace(ssh: self, message: msg)
+        }
     }
 
     /**

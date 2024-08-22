@@ -28,25 +28,25 @@ public protocol SessionDelegate {
     /// - Parameters:
     ///   - ssh: 当前的SSH会话实例
     ///   - size: 发送数据的大小
-    func send(ssh: SSH, size: Int)
+    func send(ssh: SSH, size: Int) async
 
     /// 接收数据时调用，参数为接收数据的大小
     /// - Parameters:
     ///   - ssh: 当前的SSH会话实例
     ///   - size: 接收数据的大小
-    func recv(ssh: SSH, size: Int)
+    func recv(ssh: SSH, size: Int) async
 
     /// 输出调试信息
     /// - Parameters:
     ///   - ssh: 当前的SSH会话实例
     ///   - message: 调试信息内容
-    func debug(ssh: SSH, message: String)
+    func debug(ssh: SSH, message: String) async
 
     /// 追踪SSH会话中的消息
     /// - Parameters:
     ///   - ssh: 当前的SSH会话实例
     ///   - message: 追踪的消息内容
-    func trace(ssh: SSH, message: String)
+    func trace(ssh: SSH, message: String) async
 }
 
 public protocol ChannelDelegate {
@@ -54,13 +54,13 @@ public protocol ChannelDelegate {
     /// - Parameters:
     ///   - ssh: SSH实例
     ///   - data: 到达的标准输出数据
-    func stdout(ssh: SSH, data: Data)
+    func stdout(ssh: SSH, data: Data) async
 
     /// 标准错误输出数据到达时调用
     /// - Parameters:
     ///   - ssh: SSH实例
     ///   - data: 到达的标准错误输出数据
-    func dtderr(ssh: SSH, data: Data)
+    func dtderr(ssh: SSH, data: Data) async
 
     /// 通道断开时调用
     /// - Parameter ssh: SSH实例

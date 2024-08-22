@@ -129,7 +129,7 @@ public extension SSH {
             return
         }
         addOperation {
-            stdout ? self.channelDelegate?.stdout(ssh: self, data: data) : self.channelDelegate?.dtderr(ssh: self, data: data)
+            await stdout ? self.channelDelegate?.stdout(ssh: self, data: data) : self.channelDelegate?.dtderr(ssh: self, data: data)
         }
     }
 }
