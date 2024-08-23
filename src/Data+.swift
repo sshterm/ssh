@@ -37,6 +37,10 @@ public extension Data {
         String(data: self, encoding: .utf8) ?? "" // 使用String的构造器尝试解码，并使用nil合并运算符处理解码失败的情况
     }
 
+    func trim() -> String {
+        string.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+    }
+
     // 返回Data对象的字节长度作为UInt32类型的值
     var countUInt32: UInt32 {
         UInt32(count) // 将count属性的值转换为UInt32类型
