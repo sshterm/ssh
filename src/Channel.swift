@@ -187,7 +187,7 @@ public extension SSH {
                     if rc > 0 {
                         data.append(stdout)
                     }
-                    if self.receivedEOF {
+                    if self.receivedEOF || !self.isConnected {
                         self.cancelSources()
                         return
                     }

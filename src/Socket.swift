@@ -7,9 +7,17 @@ import Darwin
 import Foundation
 
 public extension SSH {
-    // 检查socket是否已连接
+    // 属性用于检查套接字是否已连接
     var isConnected: Bool {
-        sockfd != -1
+        guard sockfd != -1 else {
+            return false
+        }
+        var optval: Int32 = 0
+        var optlen: socklen_t = Darwin.socklen_t(MemoryLayout<Int32>.size)
+        let result = withUnsafeMutablePointer(to: &optval) {
+            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, $0, &optlen)
+        }
+        return result == 0 && optval == 0
     }
 
     /// 连接到指定的套接字文件描述符。
@@ -21,7 +29,7 @@ public extension SSH {
                 return false
             }
             self.sockfd = sockfd
-            return true
+            return self.isConnected
         }
     }
 
@@ -37,7 +45,7 @@ public extension SSH {
                 return false
             }
             self.sockfd = sockfd
-            return true
+            return self.isConnected
         }
     }
 
