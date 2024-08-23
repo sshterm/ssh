@@ -47,6 +47,8 @@ public extension SSH {
         var hints = Darwin.addrinfo()
         hints.ai_family = AF_UNSPEC
         hints.ai_socktype = SOCK_STREAM
+        hints.ai_flags = AI_ADDRCONFIG | AI_CANONNAME
+        hints.ai_protocol = IPPROTO_TCP
 
         var addrInfo: UnsafeMutablePointer<addrinfo>?
         let portString = String(port)
