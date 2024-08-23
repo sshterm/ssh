@@ -71,7 +71,7 @@ public extension SSH {
                 continue
             }
 
-            var timeoutStruct = timeval(tv_sec: timeout, tv_usec: 0)
+            var timeoutStruct = Darwin.timeval(tv_sec: timeout, tv_usec: 0)
             setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeoutStruct, socklen_t(MemoryLayout<timeval>.size))
             setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeoutStruct, socklen_t(MemoryLayout<timeval>.size))
 
@@ -135,9 +135,7 @@ public extension SSH {
         }
 
         // 设置超时时间
-        var timeout = Darwin.timeval()
-        timeout.tv_sec = self.timeout
-        timeout.tv_usec = 0
+        var timeout = Darwin.timeval(tv_sec: self.timeout, tv_usec: 0)
 
         // 初始化文件描述符集合
         var fdSet, readFd, writeFd: Darwin.fd_set
