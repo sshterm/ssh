@@ -4,7 +4,6 @@
 
 import CSSH
 import Foundation
-import Socket
 
 /// SSH 类，‌用于处理 SSH 连接和相关操作。‌
 public class SSH {
@@ -32,8 +31,8 @@ public class SSH {
     /// 用于控制 SSH 类的调试信息的输出
     public let debug: [DebugType]
 
-    /// Socket 对象，‌用于网络通信。‌
-    public var socket: Socket?
+    // sockfd 是一个表示套接字文件描述符的变量，初始值为 -1。
+    public var sockfd: Int32 = -1
 
     /// 忽略的文件列表，目前包含当前目录(".")和上级目录("..")
     public var ignoredFiles = [".", ".."]
@@ -43,7 +42,6 @@ public class SSH {
 
     /// 缓冲区大小。‌
     public var bufferSize = 0x4000
-
     // 创建一个OperationQueue实例，用于管理并发操作
     let job = OperationQueue()
 

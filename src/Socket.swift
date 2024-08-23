@@ -5,38 +5,83 @@
 import CSSH
 import Darwin
 import Foundation
-import Socket
 
 public extension SSH {
-    // 获取socket文件描述符，如果socket不存在则返回无效描述符
-    var sockfd: Int32 {
-        socket?.socketfd ?? Socket.SOCKET_INVALID_DESCRIPTOR
-    }
-
     // 检查socket是否已连接
     var isConnected: Bool {
-        socket?.isConnected ?? false
+        sockfd != -1
     }
 
-    /**
-     连接到指定的主机和端口
-     - Returns: 如果连接成功返回true，否则返回false
-     */
-    func connect() async -> Bool {
+    /// 连接到指定的套接字文件描述符。
+    /// - Parameter sockfd: 套接字文件描述符的整数值。
+    /// - Returns: 如果连接成功返回true，如果文件描述符无效（例如-1）则返回false。
+    func connect(sockfd: Int32) async -> Bool {
         await call {
-            do {
-                let socket = try Socket.create(family: .unix)
-                // try socket.setBlocking(mode: self.isBlocking)
-                try socket.connect(to: self.host, port: self.port, timeout: UInt(self.timeout) * 1000)
-                self.socket = socket
-                guard self.sockfd != Socket.SOCKET_INVALID_DESCRIPTOR else {
-                    return false
-                }
-                return true
-            } catch {
+            guard sockfd != -1 else {
                 return false
             }
+            self.sockfd = sockfd
+            return true
         }
+    }
+
+    /// 连接到服务器的异步函数。
+    /// 该函数尝试创建一个套接字并连接到服务器。
+    /// 如果套接字创建成功，则保存套接字文件描述符并返回true。
+    /// 如果套接字创建失败，则返回false。
+    func connect() async -> Bool {
+        await call {
+            self.closeSocket()
+            let sockfd = self.create()
+            guard sockfd != -1 else {
+                return false
+            }
+            self.sockfd = sockfd
+            return true
+        }
+    }
+
+    /// 创建并配置socket的函数，返回socket文件描述符。
+    /// - Returns: 成功时返回socket文件描述符，失败时返回-1。
+    private func create() -> Int32 {
+        var hints = Darwin.addrinfo()
+        hints.ai_family = AF_UNSPEC
+        hints.ai_socktype = SOCK_STREAM
+
+        var addrInfo: UnsafeMutablePointer<addrinfo>?
+        let portString = String(port)
+        let result = Darwin.getaddrinfo(host, portString, &hints, &addrInfo)
+        guard result == 0, let addr = addrInfo else {
+            return -1
+        }
+
+        defer {
+            Darwin.freeaddrinfo(addrInfo)
+        }
+
+        var sockfd: Int32 = -1
+        for info in sequence(first: addr, next: { $0?.pointee.ai_next }) {
+            guard let info else {
+                continue
+            }
+            sockfd = Darwin.socket(info.pointee.ai_family, info.pointee.ai_socktype, info.pointee.ai_protocol)
+            if sockfd < 0 {
+                continue
+            }
+
+            var timeoutStruct = timeval(tv_sec: timeout, tv_usec: 0)
+            setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeoutStruct, socklen_t(MemoryLayout<timeval>.size))
+            setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeoutStruct, socklen_t(MemoryLayout<timeval>.size))
+
+            if Darwin.connect(sockfd, info.pointee.ai_addr, info.pointee.ai_addrlen) == 0 {
+                break
+            }
+
+            Darwin.close(sockfd)
+            sockfd = -1
+        }
+
+        return sockfd
     }
 
     /**
@@ -129,8 +174,8 @@ public extension SSH {
      */
     func closeSocket() {
         shutdown()
-        socket?.close()
-        socket = nil
+        Darwin.close(sockfd)
+        sockfd = -1
     }
 
     /**
@@ -140,5 +185,54 @@ public extension SSH {
     func shutdown(_ how: Int32 = SHUT_RDWR) {
         // 调用Darwin库的shutdown函数
         Darwin.shutdown(sockfd, how)
+    }
+}
+
+// 定义每个fd_set可以容纳的文件描述符数量
+let __fd_set_count = Int(__DARWIN_FD_SETSIZE) / 32
+
+public extension Darwin.fd_set {
+    // 内联函数，用于计算文件描述符在fd_set中的位置和掩码
+    @inline(__always)
+    private static func address(for fd: Int32) -> (Int, Int32) {
+        let intOffset = Int(fd) / __fd_set_count
+        let bitOffset = Int(fd) % __fd_set_count
+        let mask = Int32(bitPattern: UInt32(1 << bitOffset))
+        return (intOffset, mask)
+    }
+
+    /// 将fd_set中的所有位设置为0
+    mutating func zero() {
+        withCArrayAccess { $0.initialize(repeating: 0, count: __fd_set_count) }
+    }
+
+    /// 在fd_set中设置一个文件描述符
+    /// - Parameter fd: 要添加到fd_set的文件描述符
+    mutating func set(_ fd: Int32) {
+        let (index, mask) = fd_set.address(for: fd)
+        withCArrayAccess { $0[index] |= mask }
+    }
+
+    /// 从fd_set中清除一个文件描述符
+    /// - Parameter fd: 要从fd_set中清除的文件描述符
+    mutating func clear(_ fd: Int32) {
+        let (index, mask) = fd_set.address(for: fd)
+        withCArrayAccess { $0[index] &= ~mask }
+    }
+
+    /// 检查fd_set中是否存在一个文件描述符
+    /// - Parameter fd: 要检查的文件描述符
+    /// - Returns: 如果存在返回`True`，否则返回`false`
+    mutating func isSet(_ fd: Int32) -> Bool {
+        let (index, mask) = fd_set.address(for: fd)
+        return withCArrayAccess { $0[index] & mask != 0 }
+    }
+
+    // 内联函数，用于获取对fd_set内部数组的安全访问
+    @inline(__always)
+    internal mutating func withCArrayAccess<T>(block: (UnsafeMutablePointer<Int32>) throws -> T) rethrows -> T {
+        return try withUnsafeMutablePointer(to: &fds_bits) {
+            try block(UnsafeMutableRawPointer($0).assumingMemoryBound(to: Int32.self))
+        }
     }
 }

@@ -13,14 +13,12 @@ Pod::Spec.new do |s|
   s.default_subspecs = :none
   s.subspec 'OpenSSL' do |cs|
     cs.source_files = 'src/**/*.{swift}'
-    cs.dependency 'BlueSocket'
     cs.pod_target_xcconfig = { 'OTHER_SWIFT_FLAGS' => '$(inherited) -DOPEN_SSL' }
     cs.vendored_frameworks = ["openssl/*.xcframework"]
     cs.libraries = 'z'
   end
   s.subspec 'wolfSSL' do |cs|
     cs.source_files = 'src/**/*.{swift}'
-    cs.dependency 'BlueSocket'
     cs.pod_target_xcconfig = { 'OTHER_SWIFT_FLAGS' => '$(inherited) -DWOLF_SSL' }
     cs.vendored_frameworks = ["wolfssl/*.xcframework"]
     cs.libraries = 'z'
