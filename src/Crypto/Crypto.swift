@@ -17,9 +17,9 @@ public class Crypto {
     /// 当前使用的加密库名称。
     /// 根据编译时标志，可能是"OpenSSL"或"wolfSSL"。
     #if OPEN_SSL
-        public let name = "OpenSSL"
+        public static let name = "OpenSSL"
     #else
-        public let name = "wolfSSL"
+        public static let name = "wolfSSL"
     #endif
 
     /// 当前使用的加密库版本。
