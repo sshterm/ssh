@@ -17,7 +17,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            self.closeChannel()
+            self.close(.channel)
             let rawChannel = self.callSSH2 {
                 libssh2_channel_direct_tcpip_ex(rawSession, host, port, shost, sport)
             }
@@ -40,7 +40,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            self.closeChannel()
+            self.close(.channel)
             let rawChannel = self.callSSH2 {
                 libssh2_channel_direct_streamlocal_ex(rawSession, socketpath, shost, sport)
             }

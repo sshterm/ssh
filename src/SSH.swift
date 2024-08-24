@@ -86,16 +86,62 @@ public class SSH {
         libssh2_init(0)
     }
 
-    /// 关闭 SSH 会话和 Socket 连接。‌
-    public func close() {
-        job.cancelAllOperations()
-        closeSession()
-        closeSocket()
+    /// 关闭 SSH 会话和 Socket 连接。
+    /// - Parameter type: 关闭类型，可选值为全部、SFTP、通道、Socket 或会话。
+    public func close(_ type: CloseType = .all) {
+        #if DEBUG
+            print("关闭", type.rawValue)
+        #endif
+        switch type {
+        case .all:
+            job.cancelAllOperations()
+            close(.session)
+            close(.cocket)
+        case .sftp:
+            if let rawSFTP {
+                libssh2_sftp_shutdown(rawSFTP)
+            }
+            rawSFTP = nil
+        case .channel:
+            lock.lock()
+            defer {
+                self.lock.unlock()
+            }
+            if let rawChannel {
+                libssh2_channel_set_blocking(rawChannel, 1)
+                libssh2_channel_close(rawChannel)
+                libssh2_channel_free(rawChannel)
+                addOperation {
+                    self.channelDelegate?.disconnect(ssh: self)
+                }
+            }
+            rawChannel = nil
+        case .cocket:
+            shutdown()
+            Darwin.close(sockfd)
+            sockfd = -1
+        case .session:
+            addOperation {
+                self.sessionDelegate?.disconnect(ssh: self)
+            }
+            job.cancelAllOperations()
+            cancelSources()
+            shutdown(SHUT_RD)
+            close(.channel)
+            close(.sftp)
+            if let rawSession {
+                _ = callSSH2 {
+                    libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
+                }
+                libssh2_session_free(rawSession)
+            }
+            rawSession = nil
+        }
     }
 
     /// 析构函数，‌用于清理资源。‌
     deinit {
-        closeSocket()
+        close(.cocket)
         libssh2_exit()
     }
 }

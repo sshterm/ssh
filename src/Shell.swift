@@ -116,7 +116,7 @@ public extension SSH {
         #endif
         job.cancelAllOperations()
         cancelSources()
-        closeChannel()
+        close(.channel)
     }
 
     /// 当接收到数据时调用此方法，根据stdout参数决定将数据发送到标准输出还是错误输出。

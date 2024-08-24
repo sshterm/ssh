@@ -17,7 +17,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            self.closeChannel()
+            self.close(.channel)
             var fileinfo = libssh2_struct_stat()
             self.rawChannel = self.callSSH2 {
                 libssh2_scp_recv2(rawSession, remotePath, &fileinfo)
@@ -28,7 +28,7 @@ public extension SSH {
             let localFile = Darwin.open(localPath, O_WRONLY | O_CREAT | O_TRUNC, 0644)
             defer {
                 Darwin.close(localFile)
-                self.closeChannel()
+                self.close(.channel)
             }
             let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
             defer {
@@ -104,12 +104,12 @@ public extension SSH {
                 return false
             }
 
-            self.closeChannel()
+            self.close(.channel)
             self.rawChannel = self.callSSH2 {
                 libssh2_scp_send64(rawSession, remotePath, permissions.rawValue, fileSize, 0, 0)
             }
             defer {
-                self.closeChannel()
+                self.close(.channel)
             }
             guard let rawChannel = self.rawChannel else {
                 return false

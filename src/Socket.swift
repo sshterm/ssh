@@ -38,7 +38,7 @@ public extension SSH {
     /// 如果套接字创建失败，则返回false。
     func connect() async -> Bool {
         await call {
-            self.closeSocket()
+            self.close(.cocket)
             let sockfd = self.create()
             guard sockfd != -1 else {
                 return false
@@ -174,15 +174,6 @@ public extension SSH {
         #endif
 
         return rc
-    }
-
-    /**
-     关闭Socket连接
-     */
-    func closeSocket() {
-        shutdown()
-        Darwin.close(sockfd)
-        sockfd = -1
     }
 
     /**

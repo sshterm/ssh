@@ -14,7 +14,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            self.closeSFTP()
+            self.close(.sftp)
             let rawSFTP = self.callSSH2 {
                 libssh2_sftp_init(rawSession)
             }
@@ -70,6 +70,15 @@ public extension SSH {
             } while rc > 0
             return data
         }
+    }
+
+    /// 判断SFTP操作是否出现错误
+    /// - Returns: 如果出现错误返回true，否则返回false
+    var isSFTPError: Bool {
+        guard let rawSFTP = rawSFTP else {
+            return true
+        }
+        return libssh2_sftp_last_error(rawSFTP) != LIBSSH2_FX_OK
     }
 
     /// 异步获取指定路径的文件系统状态信息
@@ -598,14 +607,5 @@ public extension SSH {
         await writefile(path: path, data: data, permissions: permissions) { _, _ in
             true
         }
-    }
-
-    // 关闭SFTP连接
-    /// 关闭当前的SFTP会话
-    func closeSFTP() {
-        if let rawSFTP {
-            libssh2_sftp_shutdown(rawSFTP)
-        }
-        rawSFTP = nil
     }
 }

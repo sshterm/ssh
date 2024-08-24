@@ -200,12 +200,38 @@ public enum FileType: String, CaseIterable {
     }
 }
 
+// 扩展了[DebugType]数组类型，添加了一个计算属性trace
 extension [DebugType] {
+    // trace属性用于计算并返回数组中所有元素的trace值的按位或结果
+    /// 计算并返回数组中所有元素的trace值的按位或结果
     var trace: Int32 {
+        // 初始化traces变量，用于累加trace值
         var traces: Int32 = 0
+        // 遍历数组中的每个元素
         for t in self {
+            // 将当前元素的trace值与traces进行按位或操作，并赋值回traces
             traces |= t.trace
         }
+        // 返回最终的traces值
         return traces
     }
+}
+
+/// 枚举 `CloseType` 定义了不同类型的关闭操作。
+/// 这些类型包括全部关闭、SFTP关闭、通道关闭、cocket关闭和会话关闭。
+public enum CloseType: String {
+    /// 表示关闭所有相关资源。
+    case all
+
+    /// 表示仅关闭SFTP连接。
+    case sftp
+
+    /// 表示仅关闭通道。
+    case channel
+
+    /// 表示仅关闭cocket连接。
+    case cocket
+
+    /// 表示仅关闭会话。
+    case session
 }

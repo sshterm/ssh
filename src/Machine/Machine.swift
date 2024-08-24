@@ -13,7 +13,7 @@ public extension SSH {
             return false
         }
         defer {
-            self.closeChannel()
+            self.close(.channel)
         }
         guard let rawChannel = rawChannel else {
             return false

@@ -62,18 +62,18 @@ public extension SSH {
             libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
             libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
             #if DEBUG
-            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
+                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
             #endif
             self.sessionTimeout = Int(self.timeout)
             let code = self.callSSH2 {
                 libssh2_session_handshake(self.rawSession, self.sockfd)
             }
             guard code == LIBSSH2_ERROR_NONE else {
-                self.closeSession()
+                self.close(.session)
                 return false
             }
             guard self.sessionDelegate?.connect(ssh: self, fingerprint: self.fingerprint() ?? "") ?? true else {
-                self.closeSession()
+                self.close(.session)
                 return false
             }
             return true
@@ -391,24 +391,5 @@ public extension SSH {
             return false
         }
         return libssh2_userauth_authenticated(rawSession) == 1
-    }
-
-    // 关闭会话
-    func closeSession() {
-        addOperation {
-            self.sessionDelegate?.disconnect(ssh: self)
-        }
-        job.cancelAllOperations()
-        cancelSources()
-        shutdown(SHUT_RD)
-        closeSFTP()
-        closeChannel()
-        if let rawSession {
-            _ = callSSH2 {
-                libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
-            }
-            libssh2_session_free(rawSession)
-        }
-        rawSession = nil
     }
 }

@@ -13,7 +13,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            self.closeChannel()
+            self.close(.channel)
             let rawChannel = self.callSSH2 {
                 libssh2_channel_open_ex(rawSession, "session", 7, 2 * 1024 * 1024, 32768, nil, 0)
             }
@@ -63,7 +63,7 @@ public extension SSH {
             return nil
         }
         defer {
-            self.closeChannel()
+            self.close(.channel)
         }
         return await read {
             guard let rawChannel = self.rawChannel else {
@@ -124,7 +124,7 @@ public extension SSH {
     /// - Returns: 返回一个元组，包含读取的数据和读取的字节数。如果没有数据可读或者通道已关闭，返回空的Data和-1。
     func read(err: Bool = false, wait: Bool = true) -> (Data, Int) {
         guard let rawChannel = rawChannel else {
-            closeChannel()
+            close(.channel)
             return (.init(), -1)
         }
         let buflen = bufferSize
@@ -278,27 +278,5 @@ public extension SSH {
             timeoutSource.cancel()
             self.timeoutSource = nil
         }
-    }
-
-    // 关闭SSH通道
-    /// 关闭当前的SSH通道，并取消所有相关的事件源。
-    func closeChannel() {
-        #if DEBUG
-            print("关闭SSH通道")
-        #endif
-
-        lock.lock()
-        defer {
-            self.lock.unlock()
-        }
-        if let rawChannel {
-            libssh2_channel_set_blocking(rawChannel, 1)
-            libssh2_channel_close(rawChannel)
-            libssh2_channel_free(rawChannel)
-            addOperation {
-                self.channelDelegate?.disconnect(ssh: self)
-            }
-        }
-        rawChannel = nil
     }
 }
