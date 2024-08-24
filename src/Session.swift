@@ -58,11 +58,11 @@ public extension SSH {
             libssh2_session_set_blocking(self.rawSession, self.blocking ? 1 : 0)
             libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_COMPRESS, self.compress ? 1 : 0)
             libssh2_session_banner_set(self.rawSession, "SSH-2.0-libssh2_SSHTerm-6.2")
-            libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: UnsafeMutableRawPointer.self))
-            libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: UnsafeMutableRawPointer.self))
-            libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: UnsafeMutableRawPointer.self))
+            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
+            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
+            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
             #if DEBUG
-                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
+            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
             #endif
             self.sessionTimeout = Int(self.timeout)
             let code = self.callSSH2 {
