@@ -114,7 +114,8 @@ public extension SSH {
                 memory.slab = slab * 1024
             }
         }
-
+        memory.used = memory.total - memory.free - memory.buffers - memory.cached - memory.slab
+        memory.percent = Double(memory.used) / Double(memory.total)
         return memory
     }
 

@@ -33,7 +33,7 @@ public struct MemoryInfo {
     public var available: Int64 = 0
 
     /// 内存使用百分比
-    public var percent: Int64 = 0
+    public var percent: Double = 0
 
     /// 已使用内存
     public var used: Int64 = 0
