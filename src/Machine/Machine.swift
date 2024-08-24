@@ -430,4 +430,22 @@ public extension SSH {
         }
         return io
     }
+
+    /// 获取系统温度°C信息的异步函数。
+    /// 然后将获取到的文本数据转换为Double类型的数组返回。
+    /// 如果命令执行失败或转换后的数据为空，则返回nil。
+    func getTemp() async -> [Double]? {
+        guard let text = await exec(command: "cat /sys/class/hwmon/hwmon[0-9]/temp1_input")?.trim(),!text.isEmpty else {
+            return nil
+        }
+        let lines = text.components(separatedBy: .newlines).map { Double($0) ?? 0 }.map { $0 / 1000 }
+        return lines
+    }
+
+    /// 获取温度°C最大值
+    /// - Returns: 返回一个可选的Double类型，表示获取到的温度最大值。如果获取失败或没有数据，则返回nil。
+    func getTempMax() async -> Double? {
+        // 调用getTemp()异步函数获取温度数组，并使用max()方法找出最大值
+        return await getTemp()?.max()
+    }
 }
