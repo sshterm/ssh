@@ -25,10 +25,8 @@ public class Crypto {
     /// 当前使用的加密库版本。
     /// 根据编译时标志，返回OPENSSL_VERSION_STR或LIBWOLFSSL_VERSION_STRING。
     #if OPEN_SSL
-        public let version = OPENSSL_VERSION_STR
+        public static let version = OPENSSL_VERSION_STR
     #else
-        public let version = LIBWOLFSSL_VERSION_STRING
+        public static let version = LIBWOLFSSL_VERSION_STRING
     #endif
-
-    public let libssh2_version = "\(LIBSSH2_VERSION_MAJOR).\(LIBSSH2_VERSION_MINOR).\(LIBSSH2_VERSION_PATCH)"
 }

@@ -6,6 +6,12 @@ import Foundation
 
 /// SSH 类，‌用于处理 SSH 连接和相关操作。‌
 public class SSH {
+    /// 获取当前LIBSSH2库的版本号。
+    /// LIBSSH2_VERSION_MAJOR, LIBSSH2_VERSION_MINOR 和 LIBSSH2_VERSION_PATCH 是预定义的常量，
+    /// 分别代表LIBSSH2库的主版本号、次版本号和补丁版本号。
+    /// 通过字符串插值将这三个版本号拼接成一个完整的版本号字符串。
+    public static let version = "\(LIBSSH2_VERSION_MAJOR).\(LIBSSH2_VERSION_MINOR).\(LIBSSH2_VERSION_PATCH)"
+
     /// SSH 服务器的地址。‌
     public let host: String
 
@@ -117,7 +123,7 @@ public class SSH {
             }
             rawChannel = nil
         case .cocket:
-            if sockfd != LIBSSH2_INVALID_SOCKET{
+            if sockfd != LIBSSH2_INVALID_SOCKET {
                 shutdown()
                 Darwin.close(sockfd)
             }

@@ -9,8 +9,11 @@ import Foundation
     import wolfSSL
 #endif
 public enum Algorithm: String, CaseIterable {
-    case md4, md5, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
-
+    #if OPEN_SSL
+        case md4, md5, md5_sha1, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
+    #else
+        case md4, md5, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
+    #endif
     #if OPEN_SSL
         public var EVP: OpaquePointer? {
             switch self {
@@ -18,6 +21,8 @@ public enum Algorithm: String, CaseIterable {
                 EVP_md4()
             case .md5:
                 EVP_md5()
+            case .md5_sha1:
+                EVP_md5_sha1()
             case .sha1:
                 EVP_sha1()
             case .sha224:
