@@ -103,11 +103,11 @@ public class SSH {
             }
             rawSFTP = nil
         case .channel:
-            lock.lock()
-            defer {
-                self.lock.unlock()
-            }
             if let rawChannel {
+                lock.lock()
+                defer {
+                    self.lock.unlock()
+                }
                 libssh2_channel_set_blocking(rawChannel, 1)
                 libssh2_channel_close(rawChannel)
                 libssh2_channel_free(rawChannel)
@@ -117,19 +117,21 @@ public class SSH {
             }
             rawChannel = nil
         case .cocket:
-            shutdown()
-            Darwin.close(sockfd)
-            sockfd = -1
-        case .session:
-            addOperation {
-                self.sessionDelegate?.disconnect(ssh: self)
+            if sockfd != LIBSSH2_INVALID_SOCKET{
+                shutdown()
+                Darwin.close(sockfd)
             }
-            job.cancelAllOperations()
-            cancelSources()
-            shutdown(SHUT_RD)
-            close(.channel)
-            close(.sftp)
+            sockfd = LIBSSH2_INVALID_SOCKET
+        case .session:
             if let rawSession {
+                addOperation {
+                    self.sessionDelegate?.disconnect(ssh: self)
+                }
+                job.cancelAllOperations()
+                cancelSources()
+                shutdown(SHUT_RD)
+                close(.channel)
+                close(.sftp)
                 _ = callSSH2 {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
@@ -141,7 +143,7 @@ public class SSH {
 
     /// 析构函数，‌用于清理资源。‌
     deinit {
-        close(.cocket)
+        close(.all)
         libssh2_exit()
     }
 }
