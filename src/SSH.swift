@@ -2,7 +2,6 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/16.
 
-import CSSH
 import Foundation
 
 /// SSH 类，‌用于处理 SSH 连接和相关操作。‌
@@ -32,7 +31,7 @@ public class SSH {
     public let debug: [DebugType]
 
     // sockfd 是一个表示套接字文件描述符的变量，初始值为 -1。
-    public var sockfd: Int32 = -1
+    public var sockfd: Int32 = LIBSSH2_INVALID_SOCKET
 
     /// 忽略的文件列表，目前包含当前目录(".")和上级目录("..")
     public var ignoredFiles = [".", ".."]

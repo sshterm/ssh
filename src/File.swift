@@ -2,7 +2,6 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/17.
 
-import CSSH
 import Foundation
 
 public struct FileStat {
@@ -45,7 +44,8 @@ public struct FileStat {
     }
 }
 
-public struct FileAttributes {
+public struct FileAttributes: Identifiable {
+    public let id = UUID()
     // 文件名
     public let name: String
     // 文件的长名称，可能包含用户和组信息
@@ -55,7 +55,7 @@ public struct FileAttributes {
     public let fileType: FileType
 
     // 文件大小
-    public let size: UInt64
+    public let size: Int64
 
     // 文件所有者
     public let user: String
@@ -90,7 +90,7 @@ public struct FileAttributes {
         fileType = FileType(rawValue: Int32(attributes.permissions))
         name = ""
         longname = ""
-        size = attributes.filesize
+        size = Int64(attributes.filesize)
         userId = attributes.uid
         groupId = attributes.gid
         permissions = FilePermissions(rawValue: Int32(attributes.permissions))
@@ -114,7 +114,7 @@ public struct FileAttributes {
         fileType = FileType(rawValue: Int32(attributes.permissions))
         self.name = name
         self.longname = longname
-        size = attributes.filesize
+        size = Int64(attributes.filesize)
         userId = attributes.uid
         groupId = attributes.gid
         permissions = FilePermissions(rawValue: Int32(attributes.permissions))

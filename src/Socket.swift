@@ -2,14 +2,13 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/15.
 
-import CSSH
 import Darwin
 import Foundation
 
 public extension SSH {
     // 属性用于检查套接字是否已连接
     var isConnected: Bool {
-        guard sockfd != -1 else {
+        guard sockfd != LIBSSH2_INVALID_SOCKET else {
             return false
         }
         var optval: Int32 = 0
@@ -25,7 +24,7 @@ public extension SSH {
     /// - Returns: 如果连接成功返回true，如果文件描述符无效（例如-1）则返回false。
     func connect(sockfd: Int32) async -> Bool {
         await call {
-            guard sockfd != -1 else {
+            guard sockfd != LIBSSH2_INVALID_SOCKET else {
                 return false
             }
             self.sockfd = sockfd

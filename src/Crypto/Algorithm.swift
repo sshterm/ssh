@@ -2,15 +2,20 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/19.
 
-import CSSH
 import Foundation
-
+#if OPEN_SSL
+    import OpenSSL
+#else
+    import wolfSSL
+#endif
 public enum Algorithm: String, CaseIterable {
-    case md5, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
+    case md4, md5, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
 
     #if OPEN_SSL
         public var EVP: OpaquePointer? {
             switch self {
+            case .md4:
+                EVP_md4()
             case .md5:
                 EVP_md5()
             case .sha1:
@@ -40,6 +45,8 @@ public enum Algorithm: String, CaseIterable {
     #else
         public var EVP: UnsafePointer<WOLFSSL_EVP_MD>? {
             switch self {
+            case .md4:
+                wolfSSL_EVP_md4()
             case .md5:
                 wolfSSL_EVP_md5()
             case .sha1:
