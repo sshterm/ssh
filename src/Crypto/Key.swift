@@ -13,7 +13,15 @@
     import OpenSSL
 
     public extension Crypto {
-        func keygen(_ bits: Int = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
+        func keygenRSA(_ bits: Int = 2048) -> OpaquePointer? {
+            keygen(bits, id: .rsa)
+        }
+
+        func generateED25519() -> OpaquePointer? {
+            keygen(id: .ed25519)
+        }
+
+        private func keygen(_ bits: Int = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
             let genctx = EVP_PKEY_CTX_new_id(id.id, nil)
             defer {
                 EVP_PKEY_CTX_free(genctx)
