@@ -19,22 +19,22 @@
                 EVP_PKEY_CTX_free(genctx)
             }
             EVP_PKEY_keygen_init(genctx)
-            EVP_PKEY_CTX_set_rsa_keygen_bits(genctx, Int32(bits))
-            EVP_PKEY_CTX_set_rsa_keygen_primes(genctx, 2)
+
+            switch id {
+            case .rsa:
+                EVP_PKEY_CTX_set_rsa_keygen_bits(genctx, Int32(bits))
+                EVP_PKEY_CTX_set_rsa_keygen_primes(genctx, 2)
+            case .ed25519:
+                break
+            }
+
             var pkey = EVP_PKEY_new()
             EVP_PKEY_keygen(genctx, &pkey)
             return pkey
         }
 
         func keygen(id: keyAlgorithm = .ed25519) -> OpaquePointer? {
-            let genctx = EVP_PKEY_CTX_new_id(id.id, nil)
-            defer {
-                EVP_PKEY_CTX_free(genctx)
-            }
-            EVP_PKEY_keygen_init(genctx)
-            var pkey = EVP_PKEY_new()
-            EVP_PKEY_keygen(genctx, &pkey)
-            return pkey
+            return keygen(0, id: id)
         }
 
         func freeKey(_ pkey: OpaquePointer?) {
