@@ -13,14 +13,24 @@
     import OpenSSL
 
     public extension Crypto {
+        /// 生成指定位数的RSA密钥对
+        /// - Parameter bits: 密钥位数，默认为2048位
+        /// - Returns: 生成的密钥对的OpaquePointer，如果失败则返回nil
         func keygenRSA(_ bits: Int = 2048) -> OpaquePointer? {
             keygen(bits, id: .rsa)
         }
 
+        /// 生成ED25519密钥对
+        /// - Returns: 生成的密钥对的OpaquePointer，如果失败则返回nil
         func generateED25519() -> OpaquePointer? {
             keygen(id: .ed25519)
         }
 
+        /// 根据指定的算法和位数生成密钥对
+        /// - Parameters:
+        ///   - bits: 密钥位数，对于RSA算法有效，默认为2048位
+        ///   - id: 密钥算法类型，默认为RSA
+        /// - Returns: 生成的密钥对的OpaquePointer，如果失败则返回nil
         private func keygen(_ bits: Int = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
             let genctx = EVP_PKEY_CTX_new_id(id.id, nil)
             defer {
@@ -41,14 +51,15 @@
             return pkey
         }
 
-        func keygen(id: keyAlgorithm = .ed25519) -> OpaquePointer? {
-            return keygen(0, id: id)
-        }
-
+        /// 释放密钥对的内存
+        /// - Parameter pkey: 需要释放的密钥对的OpaquePointer
         func freeKey(_ pkey: OpaquePointer?) {
             EVP_PKEY_free(pkey)
         }
 
+        /// 将BIO对象的内容转换为String
+        /// - Parameter bio: BIO对象的OpaquePointer
+        /// - Returns: BIO对象内容的String表示
         func bioToString(bio: OpaquePointer) -> String {
             let len = BIO_ctrl(bio, BIO_CTRL_PENDING, 0, nil)
             var buffer = [CChar](repeating: 0, count: len + 1)
@@ -59,6 +70,9 @@
             return ret
         }
 
+        /// 将公钥转换为PEM格式的字符串
+        /// - Parameter privKey: 公钥的OpaquePointer
+        /// - Returns: PEM格式的公钥字符串
         func pubKeyToPEM(privKey: OpaquePointer) -> String {
             let out = BIO_new(BIO_s_mem())!
             defer { BIO_free(out) }
@@ -69,6 +83,11 @@
             return str
         }
 
+        /// 将私钥转换为PEM格式的字符串
+        /// - Parameters:
+        ///   - privKey: 私钥的OpaquePointer
+        ///   - password: 可选的密码，用于加密私钥，默认为空
+        /// - Returns: PEM格式的私钥字符串
         func privKeyToPEM(privKey: OpaquePointer, password: String = "") -> String {
             let out = BIO_new(BIO_s_mem())!
             defer { BIO_free(out) }
