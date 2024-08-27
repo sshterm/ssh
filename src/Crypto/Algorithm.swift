@@ -8,7 +8,7 @@ import Foundation
 #else
     import wolfSSL
 #endif
-public enum Algorithm: String, CaseIterable {
+public enum ShaAlgorithm: String, CaseIterable {
     #if OPEN_SSL
         case md4, md5, md5_sha1, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
     #else
@@ -88,3 +88,20 @@ public enum Algorithm: String, CaseIterable {
         #endif
     }
 }
+
+#if OPEN_SSL
+
+    public enum keyAlgorithm: String, CaseIterable {
+        case rsa, ed25519
+
+        var id: Int32 {
+            switch self {
+            case .rsa:
+                EVP_PKEY_RSA
+            case .ed25519:
+                EVP_PKEY_ED25519
+            }
+        }
+    }
+
+#endif

@@ -14,7 +14,7 @@ public extension Crypto {
     ///   - message: 需要进行哈希计算的字符串
     ///   - algorithm: 哈希算法
     /// - Returns: 哈希计算后的Data对象
-    func sha(_ message: String, algorithm: Algorithm) -> Data {
+    func sha(_ message: String, algorithm: ShaAlgorithm) -> Data {
         sha(message.pointerCChar, message_len: message.count, algorithm: algorithm)
     }
 
@@ -23,7 +23,7 @@ public extension Crypto {
     ///   - message: 需要进行哈希计算的Data对象
     ///   - algorithm: 哈希算法
     /// - Returns: 哈希计算后的Data对象
-    func sha(_ message: Data, algorithm: Algorithm) -> Data {
+    func sha(_ message: Data, algorithm: ShaAlgorithm) -> Data {
         sha(message.pointerCChar, message_len: message.count, algorithm: algorithm)
     }
 
@@ -32,7 +32,7 @@ public extension Crypto {
     // - message_len: 消息的长度
     // - algorithm: 使用的 SHA 算法
     /// - Returns: 哈希计算后的Data对象
-    func sha(_ message: UnsafeRawPointer, message_len: Int, algorithm: Algorithm) -> Data {
+    func sha(_ message: UnsafeRawPointer, message_len: Int, algorithm: ShaAlgorithm) -> Data {
         #if OPEN_SSL
             let evp = algorithm.EVP
             let digest = EVP_MD_get_size(evp)

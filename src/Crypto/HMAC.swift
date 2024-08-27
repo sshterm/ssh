@@ -17,7 +17,7 @@ public extension Crypto {
     ///   - key: 用于计算HMAC的密钥字符串
     ///   - algorithm: 指定的哈希算法
     /// - Returns: 计算得到的HMAC数据
-    func hmac(_ message: String, key: String, algorithm: Algorithm) -> Data {
+    func hmac(_ message: String, key: String, algorithm: ShaAlgorithm) -> Data {
         hmac(message.pointerCChar, message_len: message.count, key: key.pointerCChar, key_len: key.countInt32, algorithm: algorithm)
     }
 
@@ -28,7 +28,7 @@ public extension Crypto {
     ///   - key: 用于HMAC加密的密钥数据。
     ///   - algorithm: 加密算法，例如SHA256。
     /// - Returns: 返回加密后的HMAC数据。
-    func hmac(_ message: Data, key: Data, algorithm: Algorithm) -> Data {
+    func hmac(_ message: Data, key: Data, algorithm: ShaAlgorithm) -> Data {
         hmac(message.pointerCChar, message_len: message.count, key: key.pointerCChar, key_len: key.countInt32, algorithm: algorithm)
     }
 
@@ -40,7 +40,7 @@ public extension Crypto {
     ///   - key_len: 密钥的长度（以字节为单位）。
     ///   - algorithm: 要使用的哈希算法。
     /// - Returns: 包含计算出的HMAC值的Data对象。
-    func hmac(_ message: UnsafeRawPointer, message_len: Int, key: UnsafeRawPointer, key_len: Int32, algorithm: Algorithm) -> Data {
+    func hmac(_ message: UnsafeRawPointer, message_len: Int, key: UnsafeRawPointer, key_len: Int32, algorithm: ShaAlgorithm) -> Data {
         #if OPEN_SSL
             let evp = algorithm.EVP
             let digest = EVP_MD_get_size(evp)

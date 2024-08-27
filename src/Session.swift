@@ -298,7 +298,7 @@ public extension SSH {
     // 返回基于指定算法的主机密钥指纹
     /// - Parameter algorithm: 指定的哈希算法，默认为SHA1
     /// - Returns: 主机密钥的指纹字符串，如果无法生成则返回nil
-    func fingerprint(_ algorithm: Algorithm = .sha1) -> String? {
+    func fingerprint(_ algorithm: ShaAlgorithm = .sha1) -> String? {
         guard let key = hostkey() else {
             return nil
         }

@@ -63,3 +63,4 @@ fastlane/test_output
 
 .vscode
 .DS_Store
+src/.DS_Store
