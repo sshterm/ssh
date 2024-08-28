@@ -2,6 +2,7 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/16.
 
+import CSSH
 import Foundation
 
 /// SSH 类，‌用于处理 SSH 连接和相关操作。‌

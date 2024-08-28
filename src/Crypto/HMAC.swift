@@ -2,12 +2,9 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/18.
 
+import CSSH
 import Foundation
-#if OPEN_SSL
-    import OpenSSL
-#else
-    import wolfSSL
-#endif
+
 // 提供HMAC加密功能
 public extension Crypto {
     /// 使用指定的算法和密钥计算给定消息的HMAC（基于哈希的消息认证码）

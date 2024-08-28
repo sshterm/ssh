@@ -2,12 +2,9 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/19.
 
+import CSSH
 import Foundation
-#if OPEN_SSL
-    import OpenSSL
-#else
-    import wolfSSL
-#endif
+
 public enum ShaAlgorithm: String, CaseIterable {
     #if OPEN_SSL
         case md4, md5, md5_sha1, sha1, sha224, sha256, sha384, sha512, sha512_224, sha512_256, sha3_224, sha3_256, sha3_384, sha3_512
@@ -99,6 +96,17 @@ public enum ShaAlgorithm: String, CaseIterable {
                 EVP_PKEY_RSA
             case .ed25519:
                 EVP_PKEY_ED25519
+            }
+        }
+
+        // 方法返回当前实例的SSH密钥方法类型。
+        // 根据不同的枚举值，返回对应的SSH密钥方法字符串。
+        var method: String {
+            switch self {
+            case .rsa:
+                return "ssh-rsa"
+            case .ed25519:
+                return "ssh-ed25519"
             }
         }
     }

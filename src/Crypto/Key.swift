@@ -9,8 +9,8 @@
 //  Created by 费三量 on 2024/8/27.
 //
 #if OPEN_SSL
+    import CSSH
     import Foundation
-    import OpenSSL
 
     public extension Crypto {
         /// 生成指定位数的RSA密钥对
@@ -36,13 +36,13 @@
             defer {
                 EVP_PKEY_CTX_free(genctx)
             }
-            EVP_PKEY_keygen_init(genctx)
 
             switch id {
             case .rsa:
+                EVP_PKEY_keygen_init(genctx)
                 EVP_PKEY_CTX_set_rsa_keygen_bits(genctx, Int32(bits))
             case .ed25519:
-                break
+                EVP_PKEY_keygen_init(genctx)
             }
 
             var pkey = EVP_PKEY_new()
@@ -97,6 +97,15 @@
             let str = bioToString(bio: out)
 
             return str
+        }
+
+        /// 将私钥转换为SSH公钥的字符串表示形式。
+        /// - Parameters:
+        ///   - privKey: 私钥的OpaquePointer类型指针。
+        ///   - id: 密钥算法的keyAlgorithm类型标识符。
+        /// - Returns: SSH公钥的字符串表示形式。
+        func pubKeyToSSH(privKey: OpaquePointer, id: keyAlgorithm) -> String {
+            String(cString: sshkey_pub(privKey, id.method))
         }
     }
 

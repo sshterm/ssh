@@ -2,12 +2,9 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/18.
 
+import CSSH
 import Foundation
-#if OPEN_SSL
-    import OpenSSL
-#else
-    import wolfSSL
-#endif
+
 public extension Crypto {
     /// 使用指定的算法对字符串进行SHA哈希计算
     /// - Parameters:
