@@ -41,7 +41,6 @@
             switch id {
             case .rsa:
                 EVP_PKEY_CTX_set_rsa_keygen_bits(genctx, Int32(bits))
-                EVP_PKEY_CTX_set_rsa_keygen_primes(genctx, 2)
             case .ed25519:
                 break
             }
@@ -79,7 +78,6 @@
 
             PEM_write_bio_PUBKEY(out, privKey)
             let str = bioToString(bio: out)
-
             return str
         }
 

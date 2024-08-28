@@ -90,7 +90,6 @@ public enum ShaAlgorithm: String, CaseIterable {
 }
 
 #if OPEN_SSL
-
     public enum keyAlgorithm: String, CaseIterable {
         case rsa, ed25519
 
@@ -103,5 +102,4 @@ public enum ShaAlgorithm: String, CaseIterable {
             }
         }
     }
-
 #endif
