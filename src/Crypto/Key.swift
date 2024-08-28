@@ -2,12 +2,6 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/27.
 
-//
-//  PEM.swift
-//  SSH
-//
-//  Created by 费三量 on 2024/8/27.
-//
 #if OPEN_SSL
     import CSSH
     import Foundation
@@ -103,9 +97,12 @@
         /// - Parameters:
         ///   - privKey: 私钥的OpaquePointer类型指针。
         ///   - id: 密钥算法的keyAlgorithm类型标识符。
-        /// - Returns: SSH公钥的字符串表示形式。
-        func pubKeyToSSH(privKey: OpaquePointer, id: keyAlgorithm) -> String {
-            String(cString: sshkey_pub(privKey, id.method))
+        /// - Returns: SSH公钥的字符串表示形式，如果失败则返回nil
+        func pubKeyToSSH(privKey: OpaquePointer, id: keyAlgorithm) -> String? {
+            guard let key = sshkey_pub(privKey, id.method) else {
+                return nil
+            }
+            return String(cString: key)
         }
     }
 

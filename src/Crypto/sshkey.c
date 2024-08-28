@@ -77,7 +77,7 @@ char *sshkey_pub(EVP_PKEY *pkey, const char *key_type)
     {
         return sshkey_rsa_pub(pkey);
     }
-    else
+    else if (strcmp(key_type, "ssh-ed25519") == 0)
     {
         unsigned char *pubkey_bin = NULL;
         unsigned char *ssh_format = NULL;
@@ -141,6 +141,10 @@ char *sshkey_pub(EVP_PKEY *pkey, const char *key_type)
         free(ssh_format);
 
         return ssh_public_key;
+    }
+    else
+    {
+        return NULL;
     }
 }
 
