@@ -31,7 +31,7 @@
         ///   - bits: 密钥位数，对于RSA算法有效，默认为2048位
         ///   - id: 密钥算法类型，默认为RSA
         /// - Returns: 生成的密钥对的OpaquePointer，如果失败则返回nil
-        private func keygen(_ bits: Int = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
+        func keygen(_ bits: Int = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
             let genctx = EVP_PKEY_CTX_new_id(id.id, nil)
             defer {
                 EVP_PKEY_CTX_free(genctx)
