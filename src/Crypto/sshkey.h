@@ -10,6 +10,7 @@
 //   pkey - 指向EVP_PKEY结构体的指针，该结构体包含Ed25519密钥对。
 // 返回值：
 //   成功时返回表示Ed25519公钥的字符串指针；失败时返回NULL。
+
 char *sshkey_ed25519_pub(EVP_PKEY *pkey);
 
 // 函数：sshkey_rsa_pub
@@ -27,4 +28,3 @@ char *sshkey_rsa_pub(EVP_PKEY *pkey);
 // 返回值:
 //   成功时返回一个指向导出的公钥字符串的指针，失败时返回 NULL。
 char *sshkey_pub(EVP_PKEY *pkey, const char *key_type);
-
