@@ -216,9 +216,6 @@ char *sshkey_rsa_pub(EVP_PKEY *pkey)
 cleanup:
     BIO_free(bio);
     free(b64_pub_key);
-    if (ssh_public_key == NULL)
-    {
-        free(ssh_public_key);
-    }
+
     return ssh_public_key;
 }
