@@ -94,16 +94,62 @@ char *sshkey_pub(EVP_PKEY *pkey, const char *key_type)
     }
 }
 
+/*
+ * 函数功能：将公钥二进制数据编码为SSH公钥格式
+ * 参数：
+ *   pubkey_bin: 公钥的二进制数据指针
+ *   pubkey_len: 公钥二进制数据的长度
+ *   key_type: 公钥类型，如"ssh-ed25519"
+ * 返回值：
+ *   成功返回编码后的SSH公钥字符串，失败返回NULL
+ */
+char *sshkey_encode(unsigned char *pubkey_bin, size_t pubkey_len, const char *key_type)
+{
+    unsigned char *ssh_format = NULL;
+    char *encoded_pubkey = NULL;
+    char *ssh_public_key = NULL;
+    size_t ssh_format_len;
+    uint32_t key_type_len = htonl(strlen(key_type));
+    uint32_t pubkey_len_net = htonl(pubkey_len);
+    ssh_format_len = 4 + strlen(key_type) + 4 + pubkey_len;
+
+    ssh_format = malloc(ssh_format_len);
+    if (!ssh_format)
+    {
+        return NULL;
+    }
+
+    memcpy(ssh_format, &key_type_len, 4);
+    memcpy(ssh_format + 4, key_type, strlen(key_type));
+    memcpy(ssh_format + 4 + strlen(key_type), &pubkey_len_net, 4);
+    memcpy(ssh_format + 8 + strlen(key_type), pubkey_bin, pubkey_len);
+
+    encoded_pubkey = base64_encode(ssh_format, (int)ssh_format_len);
+    free(ssh_format);
+
+    if (!encoded_pubkey)
+    {
+        return NULL;
+    }
+
+    ssh_public_key = (char *)malloc(strlen(key_type) + strlen(encoded_pubkey) + 3);
+    if (ssh_public_key)
+    {
+        sprintf(ssh_public_key, "%s %s\n", key_type, encoded_pubkey);
+    }
+
+    free(encoded_pubkey);
+
+    return ssh_public_key;
+}
+
 // sshkey_ed25519_pub 生成 ed25519 公钥的 SSH 格式字符串
 // pkey: EVP_PKEY 结构体指针，包含公钥信息
 char *sshkey_ed25519_pub(EVP_PKEY *pkey)
 {
     unsigned char *pubkey_bin = NULL;
-    unsigned char *ssh_format = NULL;
-    char *encoded_pubkey = NULL;
     char *ssh_public_key = NULL;
     size_t pubkey_len;
-    size_t ssh_format_len;
     char *key_type = "ssh-ed25519";
 
     if (EVP_PKEY_get_raw_public_key(pkey, NULL, &pubkey_len) <= 0)
@@ -123,42 +169,11 @@ char *sshkey_ed25519_pub(EVP_PKEY *pkey)
         return NULL;
     }
 
-    uint32_t key_type_len = htonl(strlen(key_type));
-    uint32_t pubkey_len_net = htonl(pubkey_len);
-
-    ssh_format_len = 4 + strlen(key_type) + 4 + pubkey_len;
-    ssh_format = malloc(ssh_format_len);
-    if (!ssh_format)
+    ssh_public_key = sshkey_encode(pubkey_bin, pubkey_len, key_type);
+    if (ssh_public_key == NULL)
     {
-        goto cleanup;
+        OPENSSL_free(pubkey_bin);
     }
-
-    memcpy(ssh_format, &key_type_len, 4);
-    memcpy(ssh_format + 4, key_type, strlen(key_type));
-    memcpy(ssh_format + 4 + strlen(key_type), &pubkey_len_net, 4);
-    memcpy(ssh_format + 8 + strlen(key_type), pubkey_bin, pubkey_len);
-
-    encoded_pubkey = base64_encode(ssh_format, (int)ssh_format_len);
-    if (!encoded_pubkey)
-    {
-        goto cleanup;
-    }
-
-    ssh_public_key = (char *)malloc(strlen(key_type) + strlen(encoded_pubkey) + 2);
-    if (ssh_public_key)
-    {
-        sprintf(ssh_public_key, "%s %s\n", key_type, encoded_pubkey);
-        goto cleanup;
-    }
-    else
-    {
-        goto cleanup;
-    }
-
-cleanup:
-    OPENSSL_free(pubkey_bin);
-    free(encoded_pubkey);
-    free(ssh_format);
 
     return ssh_public_key;
 }
@@ -198,10 +213,12 @@ char *sshkey_rsa_pub(EVP_PKEY *pkey)
 
     snprintf(ssh_public_key, ssh_public_key_len, "%s %s\n", key_type, b64_pub_key);
 
-    free(b64_pub_key);
-    goto cleanup;
 cleanup:
     BIO_free(bio);
-
+    free(b64_pub_key);
+    if (ssh_public_key == NULL)
+    {
+        free(ssh_public_key);
+    }
     return ssh_public_key;
 }
