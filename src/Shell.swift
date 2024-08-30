@@ -74,7 +74,7 @@ public extension SSH {
     }
 
     // poll方法用于轮询socket，读取标准输出和错误输出，并在适当的时候关闭通道。
-    private func poll() {
+    func poll() {
         socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
         socketSource?.setEventHandler {
             repeat {

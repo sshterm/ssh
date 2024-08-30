@@ -10,8 +10,8 @@ public extension SSH {
     // - 参数:
     //   - host: 目标主机地址
     //   - port: 目标主机端口
-    //   - shost: SSH 服务器地址
-    //   - sport: SSH 服务器端口
+    //   - shost: 告知 SSH 服务器连接发起的主机
+    //   - sport: 告知 SSH 服务器连接源自的端口
     // - 返回值: 如果成功创建通道返回 true，否则返回 false
     func tcpip(host: String, port: Int32, shost: String, sport: Int32) async -> Bool {
         await call {
@@ -32,9 +32,9 @@ public extension SSH {
 
     // streamlocal 方法用于通过本地套接字创建一个 SSH 通道
     // - 参数:
-    //   - socketpath: 本地套接字路径
-    //   - shost: SSH 服务器地址
-    //   - sport: SSH 服务器端口
+    //   - socketpath: 服务器本地套接字路径
+    //   - shost: 告知 SSH 服务器连接发起的主机
+    //   - sport: 告知 SSH 服务器连接源自的端口
     // - 返回值: 如果成功创建通道返回 true，否则返回 false
     func streamlocal(socketpath: String, shost: String, sport: Int32) async -> Bool {
         await call {

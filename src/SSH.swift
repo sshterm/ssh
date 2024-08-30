@@ -28,6 +28,9 @@ public class SSH {
     /// 是否启用压缩。‌
     public let compress: Bool
 
+    /// SSH 协议横幅
+    public let banner: String
+
     // 用于存储和管理 SSH 方法及其描述。
     public let methods: [SSHMethod: String]
 
@@ -81,12 +84,13 @@ public class SSH {
     ///   - methods: SSH方法及其对应的字符串参数，使用字典表示，默认为空字典。
     ///   - blocking: 是否阻塞模式，默认为true。
     ///   - debug: 调试类型，默认为无。
-    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, methods: [SSHMethod: String] = [:], blocking: Bool = true, debug: [DebugType] = [.none]) {
+    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, banner: String = "", methods: [SSHMethod: String] = [:], debug: [DebugType] = [.none]) {
         self.host = host
         self.port = port
         self.user = user
         self.timeout = timeout
         self.compress = compress
+        self.banner = banner
         self.methods = methods
         self.debug = debug
         self.blocking = blocking

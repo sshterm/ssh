@@ -296,7 +296,11 @@ public extension SSH {
             guard let rawSFTP = self.rawSFTP else {
                 return false
             }
-            var attrs = LIBSSH2_SFTP_ATTRIBUTES(flags: UInt(LIBSSH2_SFTP_ATTR_UIDGID), filesize: 0, uid: uid, gid: gid, permissions: 0, atime: 0, mtime: 0)
+            var attrs = LIBSSH2_SFTP_ATTRIBUTES()
+            attrs.flags = UInt(LIBSSH2_SFTP_ATTR_UIDGID)
+            attrs.uid = uid
+            attrs.gid = gid
+
             let rc = self.callSSH2 {
                 libssh2_sftp_stat_ex(rawSFTP, path, path.countUInt32, LIBSSH2_SFTP_SETSTAT, &attrs)
             }
@@ -318,7 +322,10 @@ public extension SSH {
             guard let rawSFTP = self.rawSFTP else {
                 return false
             }
-            var attrs = LIBSSH2_SFTP_ATTRIBUTES(flags: UInt(LIBSSH2_SFTP_ATTR_PERMISSIONS), filesize: 0, uid: 0, gid: 0, permissions: permissions.rawUInt, atime: 0, mtime: 0)
+            var attrs = LIBSSH2_SFTP_ATTRIBUTES()
+            attrs.flags = UInt(LIBSSH2_SFTP_ATTR_PERMISSIONS)
+            attrs.permissions = permissions.rawUInt
+
             let rc = self.callSSH2 {
                 libssh2_sftp_stat_ex(rawSFTP, path, path.countUInt32, LIBSSH2_SFTP_SETSTAT, &attrs)
             }

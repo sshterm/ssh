@@ -2,6 +2,9 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/26.
 
+#ifndef sshkey_h
+#define sshkey_h
+
 #include <openssl.h>
 
 // 函数：sshkey_ed25519_pub
@@ -28,3 +31,5 @@ char *sshkey_rsa_pub(EVP_PKEY *pkey);
 // 返回值:
 //   成功时返回一个指向导出的公钥字符串的指针，失败时返回 NULL。
 char *sshkey_pub(EVP_PKEY *pkey, const char *key_type);
+
+#endif /* sshkey_h */

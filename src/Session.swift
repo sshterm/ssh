@@ -58,7 +58,11 @@ public extension SSH {
             libssh2_trace_sethandler(self.rawSession, nil, trace)
             libssh2_session_set_blocking(self.rawSession, self.blocking ? 1 : 0)
             libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_COMPRESS, self.compress ? 1 : 0)
-            libssh2_session_banner_set(self.rawSession, "SSH-2.0-libssh2_SSHTerm-6.2")
+            libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_SIGPIPE, 1)
+            libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_QUOTE_PATHS, 1)
+
+            libssh2_session_banner_set(self.rawSession, self.banner.isEmpty ? "SSH-2.0-libssh2_SSHTerm-6.0" : self.banner)
+
             libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
             libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
             libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
