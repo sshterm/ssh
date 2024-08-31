@@ -180,26 +180,25 @@ public extension SSH {
                     guard rc >= 0 else {
                         if rc == LIBSSH2_ERROR_SOCKET_RECV {
                             self.cancelSources()
-                            return
                         }
                         break
                     }
                     if rc > 0 {
                         data.append(stdout)
                     }
-                    if self.receivedEOF || !self.isConnected {
-                        self.cancelSources()
-                        return
-                    }
                 } while self.isPol(stderr)
 
+                if self.receivedEOF || !self.isConnected {
+                    self.cancelSources()
+                    return
+                }
                 if !self.isRead {
                     self.cancelSources()
                 }
             }
             socketSource.setCancelHandler {
                 continuation.resume(returning: data)
-                // self.cancelSources()
+                self.cancelSources()
             }
 
             timeoutSource.setEventHandler {

@@ -26,6 +26,7 @@ public extension SSH {
             self.addOperation {
                 self.channelDelegate?.connect(ssh: self, online: true)
             }
+            self.keepAlive()
             return true
         }
     }

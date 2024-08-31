@@ -157,7 +157,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
-            self.keepAlive()
+
             return true
         }
     }
@@ -184,7 +184,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
-            self.keepAlive()
+
             return true
         }
     }
@@ -212,7 +212,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
-            self.keepAlive()
+
             return true
         }
     }
@@ -239,7 +239,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
-            self.keepAlive()
+
             return true
         }
     }
@@ -258,7 +258,6 @@ public extension SSH {
             guard list.contains("none") else {
                 return false
             }
-            keepAlive()
             return isAuthenticated
         } else {
             let list = await userauth()
@@ -292,7 +291,6 @@ public extension SSH {
                 guard code == LIBSSH2_ERROR_NONE else {
                     return false
                 }
-                self.keepAlive()
                 return self.isAuthenticated
             }
         }
@@ -301,15 +299,12 @@ public extension SSH {
     /// 保持SSH会话活跃的函数。
     /// 该函数检查是否需要保持会话活跃，并且用户已认证。
     /// 如果是，则配置libssh2库的心跳机制，并设置一个定时器来定期发送心跳包。
-    private func keepAlive() {
+    func keepAlive() {
         guard let rawSession, keepalive, isAuthenticated else {
             return
         }
         libssh2_keepalive_config(rawSession, 1, UInt32(keepaliveInterval))
-        if let keepAliveSource {
-            keepAliveSource.cancel()
-            self.keepAliveSource = nil
-        }
+        cancelKeepalive()
         keepAliveSource = DispatchSource.makeTimerSource(queue: .global(qos: .background))
         guard let keepAliveSource else {
             return
@@ -323,9 +318,17 @@ public extension SSH {
             #if DEBUG
                 print("心跳机制退出")
             #endif
-            self.close(.all)
+            // self.close(.all)
         }
         keepAliveSource.resume()
+    }
+
+    // 取消心跳包
+    func cancelKeepalive() {
+        if let keepAliveSource = keepAliveSource {
+            keepAliveSource.cancel()
+            self.keepAliveSource = nil
+        }
     }
 
     // 发送心跳包以保持连接活跃
@@ -349,6 +352,7 @@ public extension SSH {
         guard rc == LIBSSH2_ERROR_NONE else {
             if rc == LIBSSH2_ERROR_SOCKET_SEND {
                 keepAliveSource.cancel()
+                close(.all)
             }
             return
         }

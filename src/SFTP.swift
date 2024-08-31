@@ -23,6 +23,7 @@ public extension SSH {
                 return false
             }
             self.rawSFTP = rawSFTP
+            self.keepAlive()
             return true
         }
     }
