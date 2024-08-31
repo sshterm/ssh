@@ -184,6 +184,9 @@ public extension SSH {
     func shutdown(_ how: Int32 = SHUT_RDWR) {
         // 调用Darwin库的shutdown函数
         Darwin.shutdown(sockfd, how)
+        if how == SHUT_RDWR {
+            Darwin.close(sockfd)
+        }
     }
 }
 

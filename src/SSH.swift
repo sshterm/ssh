@@ -141,7 +141,6 @@ public class SSH {
         case .cocket:
             if sockfd != LIBSSH2_INVALID_SOCKET {
                 shutdown()
-                Darwin.close(sockfd)
             }
             sockfd = LIBSSH2_INVALID_SOCKET
         case .session:
