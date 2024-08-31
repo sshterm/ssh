@@ -73,7 +73,7 @@ public class SSH {
     var socketSource: DispatchSourceRead?
 
     /// DispatchSourceTimer 对象，‌用于处理超时。‌
-    var timeoutSource, keepAliveSource: DispatchSourceTimer?
+    var keepAliveSource: DispatchSourceTimer?
 
     /// 会话代理，‌用于处理会话相关事件。‌
     public var sessionDelegate: SessionDelegate?

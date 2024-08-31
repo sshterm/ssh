@@ -63,7 +63,7 @@ public extension SSH {
         defer {
             self.close(.channel)
         }
-        return await read {
+        return await call {
             let code = self.callSSH2 {
                 guard let rawChannel = self.rawChannel else {
                     return -1
@@ -71,9 +71,19 @@ public extension SSH {
                 return libssh2_channel_process_startup(rawChannel, "exec", 4, command, command.countUInt32)
             }
             guard code == LIBSSH2_ERROR_NONE else {
-                return false
+                return nil
             }
-            return true
+            var data = Data()
+            repeat {
+                let (stdout, rc) = self.read()
+                guard rc >= 0 else {
+                    break
+                }
+                if rc > 0 {
+                    data.append(stdout)
+                }
+            } while self.isPol()
+            return data
         }
     }
 
@@ -145,72 +155,6 @@ public extension SSH {
         return (data, rc, dataer, erc)
     }
 
-    /// 读取通道数据的方法。
-    /// - Parameters:
-    ///   - stderr: 一个布尔值，指示是否从标准错误流读取数据，默认为false，即从标准输出流读取。
-    ///   - callback: 一个闭包，当读取操作完成后调用，返回一个布尔值表示操作是否成功。
-    /// - Returns: 一个可选的Data对象，包含读取到的数据，如果读取失败或没有数据可读，则返回nil。
-    /// - Note: 该方法是异步的，使用async/await模式。
-    func read(stderr: Bool = false, callback: @escaping () -> Bool) async -> Data? {
-        await withUnsafeContinuation { continuation in
-            self.channelBlocking(false)
-            self.cancelSources()
-            self.socketSource = DispatchSource.makeReadSource(fileDescriptor: self.sockfd, queue: self.queue)
-            self.timeoutSource = DispatchSource.makeTimerSource(queue: self.queue)
-            guard let socketSource = self.socketSource, let timeoutSource = self.timeoutSource else {
-                continuation.resume(returning: nil)
-                return
-            }
-            var data = Data()
-            socketSource.setEventHandler {
-                guard let timeoutSource = self.timeoutSource else {
-                    self.cancelSources()
-                    return
-                }
-                timeoutSource.suspend()
-                defer {
-                    timeoutSource.resume()
-                }
-                repeat {
-                    let (stdout, rc) = self.read(err: stderr, wait: false)
-                    guard rc >= 0 else {
-                        if rc == LIBSSH2_ERROR_SOCKET_RECV {
-                            self.cancelSources()
-                        }
-                        break
-                    }
-                    if rc > 0 {
-                        data.append(stdout)
-                    }
-                } while self.isPol(stderr)
-
-                if self.receivedEOF || !self.isConnected {
-                    self.cancelSources()
-                    return
-                }
-                if !self.isRead {
-                    self.cancelSources()
-                }
-            }
-            socketSource.setCancelHandler {
-                continuation.resume(returning: data)
-                self.cancelSources()
-            }
-
-            timeoutSource.setEventHandler {
-                // self.cancelSources()
-            }
-            let timeout = TimeInterval(self.sessionTimeout)
-            timeoutSource.schedule(deadline: .now() + timeout, repeating: timeout, leeway: .seconds(10))
-
-            socketSource.resume()
-            timeoutSource.resume()
-            if !callback() {
-                self.cancelSources()
-            }
-        }
-    }
-
     /// 检查从SSH通道接收数据的状态。
     /// - Parameter stderr: 如果为true，则检查标准错误流的数据；否则，检查标准输出流的数据。
     /// - Returns: 如果成功接收到数据，则返回true；否则返回false。
@@ -269,10 +213,6 @@ public extension SSH {
         if let socketSource = socketSource {
             socketSource.cancel()
             self.socketSource = nil
-        }
-        if let timeoutSource = timeoutSource {
-            timeoutSource.cancel()
-            self.timeoutSource = nil
         }
     }
 }
