@@ -80,4 +80,6 @@ typealias disconnectType = @convention(c) (UnsafeRawPointer, CInt, UnsafePointer
 #if DEBUG
     typealias debugType = @convention(c) (UnsafeRawPointer, CInt, UnsafePointer<CChar>, CInt, UnsafePointer<CChar>, CInt, UnsafeRawPointer) -> Void
 #endif
-typealias cbGenericType = @convention(c) () -> Void
+#if V010b01
+    typealias cbGenericType = @convention(c) () -> Void
+#endif

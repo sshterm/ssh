@@ -62,12 +62,20 @@ public extension SSH {
             libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_QUOTE_PATHS, 1)
 
             libssh2_session_banner_set(self.rawSession, self.banner.isEmpty ? "SSH-2.0-libssh2_SSHTerm-6.0" : self.banner)
-
-            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
-            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
-            libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
-            #if DEBUG
-                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
+            #if V010b01
+                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
+                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
+                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
+                #if DEBUG
+                    libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
+                #endif
+            #else
+                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: UnsafeMutableRawPointer.self))
+                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: UnsafeMutableRawPointer.self))
+                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: UnsafeMutableRawPointer.self))
+                #if DEBUG
+                    libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
+                #endif
             #endif
             self.sessionTimeout = Int(self.timeout)
             let code = self.callSSH2 {
