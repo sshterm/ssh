@@ -312,7 +312,7 @@ public extension SSH {
             keepAliveSource.setEventHandler {
                 self.sendKeepalive()
             }
-            socketSource?.setCancelHandler {
+            keepAliveSource.setCancelHandler {
                 self.close(.all)
             }
             keepAliveSource.resume()
