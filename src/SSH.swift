@@ -146,13 +146,13 @@ public class SSH {
             sockfd = LIBSSH2_INVALID_SOCKET
         case .session:
             if let rawSession {
+                shutdown(SHUT_RD)
                 addOperation {
                     self.sessionDelegate?.disconnect(ssh: self)
                 }
                 job.cancelAllOperations()
                 cancelKeepalive()
                 cancelSources()
-                shutdown(SHUT_RD)
                 close(.channel)
                 close(.sftp)
                 _ = callSSH2 {
