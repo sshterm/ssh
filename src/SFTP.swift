@@ -12,12 +12,9 @@ public extension SSH {
     /// - Returns: 如果成功打开SFTP会话则返回true，否则返回false。
     func openSFTP() async -> Bool {
         await call {
-            guard let rawSession = self.rawSession else {
-                return false
-            }
             self.close(.sftp)
             let rawSFTP = self.callSSH2 {
-                libssh2_sftp_init(rawSession)
+                (self.rawSession != nil) ? libssh2_sftp_init(self.rawSession) : nil
             }
             guard let rawSFTP else {
                 return false

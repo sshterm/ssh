@@ -11,19 +11,16 @@ public extension SSH {
     /// - Returns: 如果通道打开成功返回true，否则返回false
     func openChannel(lang: String = "") async -> Bool {
         await call {
-            guard let rawSession = self.rawSession else {
-                return false
-            }
             self.close(.channel)
             let rawChannel = self.callSSH2 {
-                libssh2_channel_open_ex(rawSession, "session", 7, 2 * 1024 * 1024, 32768, nil, 0)
-            }
-            guard let rawChannel else {
-                return false
+                (self.rawSession != nil) ? libssh2_channel_open_ex(self.rawSession, "session", 7, 2 * 1024 * 1024, 32768, nil, 0) : nil
             }
             if !lang.isEmpty {
                 _ = self.callSSH2 {
-                    libssh2_channel_setenv_ex(rawChannel, "LANG", 4, lang, lang.countUInt32)
+                    guard let rawChannel = self.rawChannel else {
+                        return -1
+                    }
+                    return libssh2_channel_setenv_ex(rawChannel, "LANG", 4, lang, lang.countUInt32)
                 }
             }
             self.rawChannel = rawChannel
@@ -38,11 +35,11 @@ public extension SSH {
     /// - Returns: 如果设置成功返回true，否则返回false
     func setenv(name: String, value: String) async -> Bool {
         await call {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             let code = self.callSSH2 {
-                libssh2_channel_setenv_ex(rawChannel, name, name.countUInt32, value, value.countUInt32)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_setenv_ex(rawChannel, name, name.countUInt32, value, value.countUInt32)
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 return false
@@ -67,11 +64,11 @@ public extension SSH {
             self.close(.channel)
         }
         return await read {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             let code = self.callSSH2 {
-                libssh2_channel_process_startup(rawChannel, "exec", 4, command, command.countUInt32)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_process_startup(rawChannel, "exec", 4, command, command.countUInt32)
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 return false
@@ -85,11 +82,11 @@ public extension SSH {
     /// - Returns: 如果子系统成功打开则返回true，否则返回false。
     func subsystem(name: String) async -> Bool {
         await call {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             let code = self.callSSH2 {
-                libssh2_channel_process_startup(rawChannel, "subsystem", 9, name, name.countUInt32)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_process_startup(rawChannel, "subsystem", 9, name, name.countUInt32)
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 return false
@@ -105,11 +102,11 @@ public extension SSH {
     // - 返回值: 如果写入成功返回 true，否则返回 false
     func write(data: Data, stderr: Bool = false) async -> Bool {
         await call {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             let code = self.callSSH2 {
-                libssh2_channel_write_ex(rawChannel, stderr ? SSH_EXTENDED_DATA_STDERR : 0, data.pointerCChar, data.count)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_write_ex(rawChannel, stderr ? SSH_EXTENDED_DATA_STDERR : 0, data.pointerCChar, data.count)
             }
             guard code > 0 else {
                 return false
@@ -124,17 +121,16 @@ public extension SSH {
     ///   - wait: 是否等待数据，默认为true。
     /// - Returns: 返回一个元组，包含读取的数据和读取的字节数。如果没有数据可读或者通道已关闭，返回空的Data和-1。
     func read(err: Bool = false, wait: Bool = true) -> (Data, Int) {
-        guard let rawChannel = rawChannel else {
-            close(.channel)
-            return (.init(), -1)
-        }
         let buflen = bufferSize
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: buflen)
         defer {
             buffer.deallocate()
         }
         let rc = callSSH2(wait) {
-            libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
+            guard let rawChannel = self.rawChannel else {
+                return -1
+            }
+            return libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
         }
         return (rc > 0 ? Data(bytes: buffer, count: rc) : .init(), rc)
     }
@@ -243,11 +239,11 @@ public extension SSH {
 
     // 发送EOF到远程服务器
     func sendEOF() -> Bool {
-        guard let rawChannel else {
-            return false
-        }
         let code = callSSH2 {
-            libssh2_channel_send_eof(rawChannel)
+            guard let rawChannel = self.rawChannel else {
+                return -1
+            }
+            return libssh2_channel_send_eof(rawChannel)
         }
         guard code == LIBSSH2_ERROR_NONE else {
             return false

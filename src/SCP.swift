@@ -39,7 +39,10 @@ public extension SSH {
             var total: Int64 = 0
             while total < fileinfo.st_size {
                 rc = self.callSSH2 {
-                    libssh2_channel_read_ex(rawChannel, 0, buffer, self.bufferSize)
+                    guard let rawChannel = self.rawChannel else {
+                        return -1
+                    }
+                    return libssh2_channel_read_ex(rawChannel, 0, buffer, self.bufferSize)
                 }
                 if rc > 0 {
                     n = Darwin.write(localFile, buffer, rc)
@@ -124,7 +127,10 @@ public extension SSH {
             repeat {
                 nread = Darwin.fread(buffer, 1, self.bufferSize, local)
                 rc = self.callSSH2 {
-                    libssh2_channel_write_ex(rawChannel, 0, buffer, nread)
+                    guard let rawChannel = self.rawChannel else {
+                        return -1
+                    }
+                    return libssh2_channel_write_ex(rawChannel, 0, buffer, nread)
                 }
                 if rc < 0 {
                     return false

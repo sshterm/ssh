@@ -11,14 +11,14 @@ public extension SSH {
     /// - Returns: 如果启动成功返回true，否则返回false
     func shell() async -> Bool {
         await call {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             self.channelBlocking(false)
             self.cancelSources()
             self.poll()
             let code = self.callSSH2 {
-                libssh2_channel_process_startup(rawChannel, "shell", 5, nil, 0)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_process_startup(rawChannel, "shell", 5, nil, 0)
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 return false
@@ -39,11 +39,11 @@ public extension SSH {
     /// - Returns: 如果请求成功返回true，否则返回false
     func requestPtySize(width: Int32, height: Int32) async -> Bool {
         await call {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             let code = self.callSSH2 {
-                libssh2_channel_request_pty_size_ex(rawChannel, width, height, LIBSSH2_TERM_WIDTH_PX, LIBSSH2_TERM_HEIGHT_PX)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_request_pty_size_ex(rawChannel, width, height, LIBSSH2_TERM_WIDTH_PX, LIBSSH2_TERM_HEIGHT_PX)
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 return false
@@ -61,11 +61,11 @@ public extension SSH {
     /// - Returns: 如果请求成功返回true，否则返回false
     func requestPty(type: PtyType = .xterm, width: Int32 = LIBSSH2_TERM_WIDTH, height: Int32 = LIBSSH2_TERM_HEIGHT) async -> Bool {
         await call {
-            guard let rawChannel = self.rawChannel else {
-                return false
-            }
             let code = self.callSSH2 {
-                libssh2_channel_request_pty_ex(rawChannel, type.rawValue, type.lengthUInt32, nil, 0, width, height, LIBSSH2_TERM_WIDTH_PX, LIBSSH2_TERM_HEIGHT_PX)
+                guard let rawChannel = self.rawChannel else {
+                    return -1
+                }
+                return libssh2_channel_request_pty_ex(rawChannel, type.rawValue, type.lengthUInt32, nil, 0, width, height, LIBSSH2_TERM_WIDTH_PX, LIBSSH2_TERM_HEIGHT_PX)
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 return false

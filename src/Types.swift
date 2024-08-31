@@ -221,9 +221,6 @@ extension [DebugType] {
 /// 枚举 `CloseType` 定义了不同类型的关闭操作。
 /// 这些类型包括全部关闭、SFTP关闭、通道关闭、cocket关闭和会话关闭。
 public enum CloseType: String {
-    /// 表示关闭所有相关资源。
-    case all
-
     /// 表示仅关闭SFTP连接。
     case sftp
 

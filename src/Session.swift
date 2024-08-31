@@ -306,10 +306,11 @@ public extension SSH {
         libssh2_keepalive_config(rawSession, 1, UInt32(keepaliveInterval))
         cancelKeepalive()
         keepAliveSource = DispatchSource.makeTimerSource(queue: .global(qos: .background))
+
         guard let keepAliveSource else {
             return
         }
-        keepAliveSource.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(keepaliveInterval))
+        keepAliveSource.schedule(deadline: DispatchTime.now() + .seconds(keepaliveInterval), repeating: .seconds(keepaliveInterval), leeway: .seconds(keepaliveInterval))
 
         keepAliveSource.setEventHandler {
             self.sendKeepalive()
@@ -352,7 +353,7 @@ public extension SSH {
         guard rc == LIBSSH2_ERROR_NONE else {
             if rc == LIBSSH2_ERROR_SOCKET_SEND {
                 keepAliveSource.cancel()
-                close(.all)
+                close(.session)
             }
             return
         }

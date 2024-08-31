@@ -110,15 +110,11 @@ public class SSH {
 
     /// 关闭 SSH 会话和 Socket 连接。
     /// - Parameter type: 关闭类型，可选值为全部、SFTP、通道、Socket 或会话。
-    public func close(_ type: CloseType = .all) {
+    public func close(_ type: CloseType = .session) {
         #if DEBUG
             print("关闭", type.rawValue)
         #endif
         switch type {
-        case .all:
-            job.cancelAllOperations()
-            close(.session)
-            close(.cocket)
         case .sftp:
             if let rawSFTP {
                 libssh2_sftp_shutdown(rawSFTP)
@@ -151,13 +147,15 @@ public class SSH {
                 }
                 cancelKeepalive()
                 cancelSources()
+                shutdown(SHUT_RD)
                 close(.channel)
                 close(.sftp)
-                shutdown(SHUT_RD)
                 _ = callSSH2 {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
                 libssh2_session_free(rawSession)
+                shutdown(SHUT_WR)
+                close(.cocket)
             }
             rawSession = nil
         }
