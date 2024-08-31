@@ -344,8 +344,11 @@ public extension SSH {
         defer {
             seconds.deallocate()
         }
-        guard libssh2_keepalive_send(rawSession, seconds) == LIBSSH2_ERROR_NONE else {
-            keepAliveSource.cancel()
+        let rc = libssh2_keepalive_send(rawSession, seconds)
+        guard rc == LIBSSH2_ERROR_NONE else {
+            if rc == LIBSSH2_ERROR_SOCKET_SEND {
+                keepAliveSource.cancel()
+            }
             return
         }
         #if DEBUG
