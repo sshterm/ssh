@@ -126,11 +126,11 @@ public class SSH {
             rawSFTP = nil
         case .channel:
             if let rawChannel {
+                libssh2_channel_set_blocking(rawChannel, 0)
                 lock.lock()
                 defer {
                     self.lock.unlock()
                 }
-                libssh2_channel_set_blocking(rawChannel, 1)
                 libssh2_channel_close(rawChannel)
                 libssh2_channel_free(rawChannel)
                 addOperation {
@@ -145,15 +145,15 @@ public class SSH {
             sockfd = LIBSSH2_INVALID_SOCKET
         case .session:
             if let rawSession {
-                shutdown(SHUT_RD)
+                job.cancelAllOperations()
                 addOperation {
                     self.sessionDelegate?.disconnect(ssh: self)
                 }
-                job.cancelAllOperations()
                 cancelKeepalive()
                 cancelSources()
                 close(.channel)
                 close(.sftp)
+                shutdown(SHUT_RD)
                 _ = callSSH2 {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
