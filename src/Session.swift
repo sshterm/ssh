@@ -77,7 +77,7 @@ public extension SSH {
                     libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
                 #endif
             #endif
-            self.sessionTimeout = Int(self.timeout)
+            // self.sessionTimeout = Int(self.timeout)
             let code = self.callSSH2 {
                 libssh2_session_handshake(self.rawSession, self.sockfd)
             }
@@ -302,29 +302,30 @@ public extension SSH {
     /// 该函数检查是否需要保持会话活跃，并且用户已认证。
     /// 如果是，则配置libssh2库的心跳机制，并设置一个定时器来定期发送心跳包。
     private func keepAlive() {
-        if keepalive, isAuthenticated {
-            guard let rawSession else {
-                return
-            }
-            libssh2_keepalive_config(rawSession, 1, UInt32(keepaliveInterval))
-            if let keepAliveSource {
-                keepAliveSource.cancel()
-                self.keepAliveSource = nil
-            }
-            keepAliveSource = DispatchSource.makeTimerSource(queue: .global(qos: .background))
-            guard let keepAliveSource else {
-                return
-            }
-            keepAliveSource.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(keepaliveInterval))
-
-            keepAliveSource.setEventHandler {
-                self.sendKeepalive()
-            }
-            keepAliveSource.setCancelHandler {
-                self.close(.all)
-            }
-            keepAliveSource.resume()
+        guard let rawSession, keepalive, isAuthenticated else {
+            return
         }
+        libssh2_keepalive_config(rawSession, 1, UInt32(keepaliveInterval))
+        if let keepAliveSource {
+            keepAliveSource.cancel()
+            self.keepAliveSource = nil
+        }
+        keepAliveSource = DispatchSource.makeTimerSource(queue: .global(qos: .background))
+        guard let keepAliveSource else {
+            return
+        }
+        keepAliveSource.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(keepaliveInterval))
+
+        keepAliveSource.setEventHandler {
+            self.sendKeepalive()
+        }
+        keepAliveSource.setCancelHandler {
+            #if DEBUG
+                print("心跳机制退出")
+            #endif
+            self.close(.all)
+        }
+        keepAliveSource.resume()
     }
 
     // 发送心跳包以保持连接活跃
