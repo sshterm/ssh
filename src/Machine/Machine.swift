@@ -16,11 +16,11 @@ public extension SSH {
         defer {
             self.close(.channel)
         }
-        guard let rawChannel = rawChannel else {
-            return false
-        }
         let code = callSSH2 {
-            libssh2_channel_process_startup(rawChannel, "exec", 4, "echo \">TEST<\"", 13)
+            guard let rawChannel = self.rawChannel else {
+                return -1
+            }
+            return libssh2_channel_process_startup(rawChannel, "exec", 4, "echo \">TEST<\"", 13)
         }
         guard code == LIBSSH2_ERROR_NONE else {
             return false
@@ -29,7 +29,12 @@ public extension SSH {
         defer {
             buffer.deallocate()
         }
-        let rc = callSSH2 { libssh2_channel_read_ex(rawChannel, 0, buffer, 6) }
+        let rc = callSSH2 {
+            guard let rawChannel = self.rawChannel else {
+                return -1
+            }
+            return libssh2_channel_read_ex(rawChannel, 0, buffer, 6)
+        }
         guard rc == 6 else {
             return false
         }
