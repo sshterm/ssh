@@ -132,7 +132,7 @@ char *sshkey_encode(unsigned char *pubkey_bin, size_t pubkey_len, const char *ke
         return NULL;
     }
 
-    ssh_public_key = (char *)malloc(strlen(key_type) + strlen(encoded_pubkey) + 3);
+    ssh_public_key = (char *)malloc(strlen(key_type) + strlen(encoded_pubkey) + 2);
     if (ssh_public_key)
     {
         sprintf(ssh_public_key, "%s %s\n", key_type, encoded_pubkey);

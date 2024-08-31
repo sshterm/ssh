@@ -149,6 +149,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
+            self.keepAlive()
             return true
         }
     }
@@ -175,6 +176,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
+            self.keepAlive()
             return true
         }
     }
@@ -202,6 +204,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
+            self.keepAlive()
             return true
         }
     }
@@ -228,6 +231,7 @@ public extension SSH {
             guard code == LIBSSH2_ERROR_NONE, self.isAuthenticated else {
                 return false
             }
+            self.keepAlive()
             return true
         }
     }
@@ -246,6 +250,7 @@ public extension SSH {
             guard list.contains("none") else {
                 return false
             }
+            keepAlive()
             return isAuthenticated
         } else {
             let list = await userauth()
@@ -279,10 +284,58 @@ public extension SSH {
                 guard code == LIBSSH2_ERROR_NONE else {
                     return false
                 }
-
+                self.keepAlive()
                 return self.isAuthenticated
             }
         }
+    }
+
+    /// 保持SSH会话活跃的函数。
+    /// 该函数检查是否需要保持会话活跃，并且用户已认证。
+    /// 如果是，则配置libssh2库的心跳机制，并设置一个定时器来定期发送心跳包。
+    private func keepAlive() {
+        if keepalive, isAuthenticated {
+            guard let rawSession else {
+                return
+            }
+            libssh2_keepalive_config(rawSession, 1, UInt32(keepaliveInterval))
+            if let keepAliveSource {
+                keepAliveSource.cancel()
+                self.keepAliveSource = nil
+            }
+            keepAliveSource = DispatchSource.makeTimerSource(queue: .global(qos: .background))
+            guard let keepAliveSource else {
+                return
+            }
+            keepAliveSource.schedule(deadline: DispatchTime.now(), repeating: DispatchTimeInterval.seconds(keepaliveInterval))
+
+            keepAliveSource.setEventHandler {
+                self.sendKeepalive()
+            }
+            socketSource?.setCancelHandler {
+                self.close(.all)
+            }
+            keepAliveSource.resume()
+        }
+    }
+
+    // 发送心跳包以保持连接活跃
+    private func sendKeepalive() {
+        guard let rawSession = rawSession else {
+            keepAliveSource?.cancel()
+            return
+        }
+        let seconds = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
+        defer {
+            seconds.deallocate()
+        }
+        guard libssh2_keepalive_send(rawSession, seconds) == LIBSSH2_ERROR_NONE else {
+            keepAliveSource?.cancel()
+            return
+        }
+        #if DEBUG
+            print("心跳秒", seconds.pointee)
+        #endif
     }
 
     // 定义isBlocking属性，用于获取和设置会话的阻塞状态

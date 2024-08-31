@@ -34,8 +34,11 @@ public class SSH {
     // 用于存储和管理 SSH 方法及其描述。
     public let methods: [SSHMethod: String]
 
-    /// 是否为阻塞模式。‌
+    /// 是否为阻塞模式
     public let blocking: Bool
+
+    /// 是否为保持心跳
+    public let keepalive: Bool
 
     /// 用于控制 SSH 类的调试信息的输出
     public let debug: [DebugType]
@@ -51,6 +54,12 @@ public class SSH {
 
     /// 缓冲区大小。‌
     public var bufferSize = 0x4000
+
+    // keepaliveInterval 属性用于设置SSH连接的保持活动间隔时间（秒），
+    // 默认值为5秒。保持活动信号用于在无数据交换时维持连接活跃，
+    // 防止因长时间无活动而被网络设备断开连接。
+    public var keepaliveInterval = 5
+
     // 创建一个OperationQueue实例，用于管理并发操作
     let job = OperationQueue()
 
@@ -64,7 +73,7 @@ public class SSH {
     var socketSource: DispatchSourceRead?
 
     /// DispatchSourceTimer 对象，‌用于处理超时。‌
-    var timeoutSource: DispatchSourceTimer?
+    var timeoutSource, keepAliveSource: DispatchSourceTimer?
 
     /// 会话代理，‌用于处理会话相关事件。‌
     public var sessionDelegate: SessionDelegate?
@@ -84,7 +93,8 @@ public class SSH {
     ///   - methods: SSH方法及其对应的字符串参数，使用字典表示，默认为空字典。
     ///   - blocking: 是否阻塞模式，默认为true。
     ///   - debug: 调试类型，默认为无。
-    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, banner: String = "", methods: [SSHMethod: String] = [:], debug: [DebugType] = [.none]) {
+    ///   - keepalive: 是否保持心跳，默认为false。
+    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, banner: String = "", methods: [SSHMethod: String] = [:], debug: [DebugType] = [.none], keepalive: Bool = false) {
         self.host = host
         self.port = port
         self.user = user
@@ -94,6 +104,7 @@ public class SSH {
         self.methods = methods
         self.debug = debug
         self.blocking = blocking
+        self.keepalive = keepalive
         libssh2_init(0)
     }
 
@@ -147,6 +158,11 @@ public class SSH {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
                 libssh2_session_free(rawSession)
+                
+                if let keepAliveSource = keepAliveSource {
+                    keepAliveSource.cancel()
+                    self.keepAliveSource = nil
+                }
             }
             rawSession = nil
         }
