@@ -5,7 +5,8 @@
 import Foundation
 
 /// 负载平均值结构体，用于存储系统的负载信息和进程信息。
-public struct LoadAverage {
+public struct LoadAverage: Identifiable {
+    public let id = UUID()
     /// 1分钟平均负载
     public var loadAverage1Min: Double = 0
 
@@ -25,7 +26,8 @@ public struct LoadAverage {
     public var lastPid: Int = 0
 }
 
-public struct MemoryInfo {
+public struct MemoryInfo: Identifiable {
+    public let id = UUID()
     /// 总内存
     public var total: Int64 = 0
 
@@ -115,7 +117,8 @@ public struct CpuTimes {
     public var guestNice: Double = 0
 }
 
-public struct CpuPercent {
+public struct CpuPercent: Identifiable {
+    public let id = UUID()
     /// 总CPU使用百分比
     public var total: Double = 0
 
@@ -154,6 +157,7 @@ public struct DiskIoInfo {
 }
 
 public struct DiskIoInfoAll {
+    public let id = UUID()
     /// 读取的总字节数
     public var totalBytesRead: Int64 = 0
     /// 写入的总字节数
@@ -198,6 +202,7 @@ public struct NetworkIoInfo {
 }
 
 public struct NetworkIoInfoAll {
+    public let id = UUID()
     /// 发送的总字节数
     public var totalBytesSent: Int64 = 0
     /// 接收的总字节数
