@@ -183,6 +183,9 @@ public extension SSH {
 
     // 发送EOF到远程服务器
     func sendEOF() -> Bool {
+        guard !receivedEOF else {
+            return true
+        }
         let code = callSSH2 {
             guard let rawChannel = self.rawChannel else {
                 return -1
