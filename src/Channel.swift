@@ -60,9 +60,6 @@ public extension SSH {
         guard await openChannel() else {
             return nil
         }
-        defer {
-            self.close(.channel)
-        }
         return await call {
             let code = self.callSSH2 {
                 guard let rawChannel = self.rawChannel else {
@@ -71,6 +68,7 @@ public extension SSH {
                 return libssh2_channel_process_startup(rawChannel, "exec", 4, command, command.countUInt32)
             }
             guard code == LIBSSH2_ERROR_NONE else {
+                self.close(.channel)
                 return nil
             }
             var data = Data()
@@ -84,6 +82,7 @@ public extension SSH {
                 }
             } while self.isPol()
             _ = self.sendEOF()
+            self.close(.channel)
             return data
         }
     }
