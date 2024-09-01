@@ -65,6 +65,7 @@ public class SSH {
 
     /// 用于同步访问的锁。‌
     let lock = NSLock()
+    let lockRow = NSLock()
 
     /// 并发队列，‌用于处理 SSH 相关任务。‌
     let queue: DispatchQueue = .init(label: "SSH Queue", attributes: .concurrent)
@@ -145,6 +146,10 @@ public class SSH {
                 shutdown(SHUT_RD)
                 close(.channel)
                 close(.sftp)
+                lockRow.lock()
+                defer {
+                    lockRow.unlock()
+                }
                 _ = callSSH2 {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }

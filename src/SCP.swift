@@ -23,7 +23,7 @@ public extension SSH {
             self.rawChannel = self.callSSH2 {
                 libssh2_scp_recv2(rawSession, remotePath, &fileinfo)
             }
-            guard let rawChannel = self.rawChannel else {
+            guard let _ = self.rawChannel else {
                 return false
             }
             let localFile = Darwin.open(localPath, O_WRONLY | O_CREAT | O_TRUNC, 0644)
@@ -115,7 +115,7 @@ public extension SSH {
             defer {
                 self.close(.channel)
             }
-            guard let rawChannel = self.rawChannel else {
+            guard let _ = self.rawChannel else {
                 return false
             }
             var nread, rc: Int

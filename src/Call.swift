@@ -11,7 +11,9 @@ extension SSH {
     /// - Returns: 闭包执行的结果。‌
     func call<T>(_ callback: @escaping () -> T) async -> T {
         await withUnsafeContinuation { continuation in
+            self.lockRow.lock()
             let ret = callback()
+            self.lockRow.unlock()
             continuation.resume(returning: ret)
         }
     }
