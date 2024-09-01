@@ -83,6 +83,7 @@ public extension SSH {
                     data.append(stdout)
                 }
             } while self.isPol()
+            _ = self.sendEOF()
             return data
         }
     }

@@ -106,6 +106,7 @@ public extension SSH {
                 print("轮询socket关闭")
             #endif
             self.channelDelegate?.connect(ssh: self, online: false)
+            _ = self.sendEOF()
         }
         socketSource?.resume()
     }
