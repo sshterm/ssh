@@ -118,18 +118,17 @@ public class SSH {
         case .sftp:
             if let rawSFTP {
                 libssh2_sftp_shutdown(rawSFTP)
+                self.rawSFTP = nil
             }
-            rawSFTP = nil
         case .channel:
             if let rawChannel {
                 libssh2_channel_set_blocking(rawChannel, 0)
-                _ = sendEOF()
                 libssh2_channel_free(rawChannel)
                 addOperation {
                     self.channelDelegate?.disconnect(ssh: self)
                 }
+                self.rawChannel = nil
             }
-            rawChannel = nil
         case .cocket:
             if sockfd != LIBSSH2_INVALID_SOCKET {
                 shutdown()
@@ -152,8 +151,8 @@ public class SSH {
                 libssh2_session_free(rawSession)
                 shutdown(SHUT_WR)
                 close(.cocket)
+                self.rawSession = nil
             }
-            rawSession = nil
         }
     }
 
