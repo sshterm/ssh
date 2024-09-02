@@ -334,15 +334,12 @@ public extension SSH {
 
     // 发送心跳包以保持连接活跃
     private func sendKeepalive() {
-        guard let keepAliveSource else {
-            return
-        }
-        keepAliveSource.suspend()
+        keepAliveSource?.suspend()
         defer {
-            keepAliveSource.resume()
+            keepAliveSource?.resume()
         }
         guard let rawSession = rawSession else {
-            keepAliveSource.cancel()
+            keepAliveSource?.cancel()
             return
         }
         let seconds = UnsafeMutablePointer<UInt32>.allocate(capacity: 0)
@@ -352,7 +349,7 @@ public extension SSH {
         let rc = libssh2_keepalive_send(rawSession, seconds)
         guard rc == LIBSSH2_ERROR_NONE else {
             if rc == LIBSSH2_ERROR_SOCKET_SEND {
-                keepAliveSource.cancel()
+                keepAliveSource?.cancel()
                 close(.session)
             }
             return

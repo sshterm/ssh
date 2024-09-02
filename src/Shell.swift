@@ -78,9 +78,12 @@ public extension SSH {
     func poll() {
         socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
         socketSource?.setEventHandler {
+            #if DEBUG
+                print("轮询socket")
+            #endif
             repeat {
                 let (stdout, rc, dtderr, erc) = self.read()
-                guard rc >= 0 || erc >= 0 else {
+                guard rc > 0 || erc > 0 else {
                     guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
                         self.closeShell()
                         return
@@ -99,7 +102,15 @@ public extension SSH {
             } while true
             if !self.isRead {
                 self.closeShell()
+                return
             }
+            if self.receivedEOF || !self.isConnected {
+                self.closeShell()
+                return
+            }
+            #if DEBUG
+                print("轮询socket end")
+            #endif
         }
         socketSource?.setCancelHandler {
             #if DEBUG

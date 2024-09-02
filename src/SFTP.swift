@@ -338,7 +338,7 @@ public extension SSH {
     // - 参数path: 文件路径
     // - 参数progress: 进度回调，返回已读取的总字节数和文件总大小
     // - 返回值: 文件内容的Data对象，如果失败则返回nil
-    func readfile(path: String, progress: @escaping (_ total: Int, _ size: Int) -> Bool) async -> Data? {
+    func readfile(path: String, progress: @escaping (_ send: Int, _ size: Int) -> Bool) async -> Data? {
         await call {
             guard let rawSFTP = self.rawSFTP else {
                 return nil
@@ -401,7 +401,7 @@ public extension SSH {
     //   - localPath: 本地保存路径
     //   - progress: 进度回调，返回已下载的总大小和文件总大小
     // - Returns: 如果成功读取并保存文件则返回true，否则返回false
-    func readfile(remotePath: String, localPath: String, progress: @escaping (_ total: Int64, _ size: Int64) -> Bool) async -> Bool {
+    func readfile(remotePath: String, localPath: String, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
             guard let rawSFTP = self.rawSFTP else {
                 return false
@@ -430,6 +430,7 @@ public extension SSH {
             defer {
                 buffer.deallocate()
             }
+
             let filesize = Int64(fileinfo.filesize)
             var rc, n: Int
             var total: Int64 = 0
@@ -437,19 +438,24 @@ public extension SSH {
                 rc = self.callSSH2 {
                     libssh2_sftp_read(handle, buffer, self.bufferSize)
                 }
-                if rc > 0 {
-                    n = Darwin.write(localFile, buffer, rc)
-
-                    if n < rc {
-                        return false
-                    }
-                    total += Int64(rc)
-                    if !progress(total, filesize) {
-                        return false
-                    }
-                } else if rc < 0 {
-                    return false
+                guard rc > 0 else {
+                    break
                 }
+                repeat {
+                    if rc > 0 {
+                        n = Darwin.write(localFile, buffer, rc)
+                        if n < 0 {
+                            return false
+                        }
+                        total += Int64(n)
+                        rc -= n
+                        if !progress(total, filesize) {
+                            return false
+                        }
+                    } else if rc < 0 {
+                        return false
+                    }
+                } while rc > 0
             }
             return true
         }
@@ -474,7 +480,7 @@ public extension SSH {
     ///   - permissions: 文件权限，默认为默认权限
     ///   - progress: 进度回调，返回已写入的总字节数和文件总大小
     /// - Returns: 写入成功返回true，否则返回false
-    func writefile(path: String, data: Data, permissions: FilePermissions = .default, progress: @escaping (_ total: Int, _ size: Int) -> Bool) async -> Bool {
+    func writefile(path: String, data: Data, permissions: FilePermissions = .default, progress: @escaping (_ send: Int, _ size: Int) -> Bool) async -> Bool {
         await call {
             guard let rawSFTP = self.rawSFTP else {
                 return false
@@ -542,7 +548,7 @@ public extension SSH {
     ///   - permissions: 文件权限，默认为默认权限
     ///   - progress: 进度回调，返回已上传的总字节数和文件总大小
     /// - Returns: 上传成功返回true，否则返回false
-    func writefile(localPath: String, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ total: Int64, _ size: Int64) -> Bool) async -> Bool {
+    func writefile(localPath: String, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
             guard let rawSFTP = self.rawSFTP else {
                 return false
@@ -571,19 +577,26 @@ public extension SSH {
             defer {
                 buffer.deallocate()
             }
-            while total < fileSize {
+
+            repeat {
                 nread = Darwin.fread(buffer, 1, self.bufferSize, local)
-                rc = self.callSSH2 {
-                    libssh2_sftp_write(handle, buffer, nread)
+                guard nread > 0 else {
+                    break
                 }
-                if rc < 0 {
-                    return false
-                }
-                total += Int64(rc)
-                if !progress(total, fileSize) {
-                    return false
-                }
-            }
+                repeat {
+                    rc = self.callSSH2 {
+                        libssh2_sftp_write(handle, buffer, nread)
+                    }
+                    if rc < 0 {
+                        return false
+                    }
+                    total += Int64(rc)
+                    nread -= rc
+                    if !progress(total, fileSize) {
+                        return false
+                    }
+                } while nread > 0
+            } while true
 
             return true
         }

@@ -13,51 +13,59 @@ public extension SSH {
     ///   - localPath: 本地文件路径
     ///   - progress: 进度回调，接收已下载的总大小和文件总大小，返回一个布尔值表示是否继续下载
     /// - Returns: 下载是否成功的布尔值
-    func download(remotePath: String, localPath: String, progress: @escaping (_ total: Int64, _ size: Int64) -> Bool) async -> Bool {
+    func download(remotePath: String, localPath: String, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            self.close(.channel)
             var fileinfo = libssh2_struct_stat()
-            self.rawChannel = self.callSSH2 {
+            let handle = self.callSSH2 {
                 libssh2_scp_recv2(rawSession, remotePath, &fileinfo)
             }
-            guard let _ = self.rawChannel else {
+            guard let handle else {
                 return false
+            }
+            defer {
+                _ = self.callSSH2 {
+                    libssh2_channel_send_eof(handle)
+                }
+                libssh2_channel_free(handle)
             }
             let localFile = Darwin.open(localPath, O_WRONLY | O_CREAT | O_TRUNC, 0644)
             defer {
                 Darwin.close(localFile)
-                self.close(.channel)
             }
             let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
             defer {
                 buffer.deallocate()
             }
+            let filesize = Int64(fileinfo.st_size)
             var rc, n: Int
             var total: Int64 = 0
-            while total < fileinfo.st_size {
+            while total < filesize {
                 rc = self.callSSH2 {
-                    guard let rawChannel = self.rawChannel else {
-                        return -1
-                    }
-                    return libssh2_channel_read_ex(rawChannel, 0, buffer, self.bufferSize)
+                    libssh2_channel_read_ex(handle, 0, buffer, self.bufferSize)
                 }
-                if rc > 0 {
-                    n = Darwin.write(localFile, buffer, rc)
-
-                    if n < rc {
+                guard rc > 0 else {
+                    break
+                }
+                repeat {
+                    if rc > 0 {
+                        n = Darwin.write(localFile, buffer, rc)
+                        if n < 0 {
+                            return false
+                        }
+                        total += Int64(n)
+                        rc -= n
+                        if !progress(total, fileinfo.st_size) {
+                            return false
+                        }
+                    } else if rc < 0 {
                         return false
                     }
-                    total += Int64(rc)
-                    if !progress(total, fileinfo.st_size) {
-                        return false
-                    }
-                } else if rc < 0 {
-                    return false
-                }
+                } while rc > 0
             }
+
             return true
         }
     }
@@ -92,7 +100,7 @@ public extension SSH {
     ///   - permissions: 文件权限，默认为默认权限
     ///   - progress: 进度回调，接收已上传的总字节数和文件总大小
     /// - Returns: 上传成功与否的布尔值
-    func upload(localPath: String, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ total: Int64, _ size: Int64) -> Bool) async -> Bool {
+    func upload(localPath: String, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
             guard let rawSession = self.rawSession else {
                 return false
@@ -108,16 +116,19 @@ public extension SSH {
                 return false
             }
 
-            self.close(.channel)
-            self.rawChannel = self.callSSH2 {
+            let handle = self.callSSH2 {
                 libssh2_scp_send64(rawSession, remotePath, permissions.rawValue, fileSize, 0, 0)
             }
-            defer {
-                self.close(.channel)
-            }
-            guard let _ = self.rawChannel else {
+            guard let handle else {
                 return false
             }
+            defer {
+                _ = self.callSSH2 {
+                    libssh2_channel_send_eof(handle)
+                }
+                libssh2_channel_free(handle)
+            }
+            libssh2_channel_set_blocking(handle, 1)
             var nread, rc: Int
             var total: Int64 = 0
             let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
@@ -126,20 +137,23 @@ public extension SSH {
             }
             repeat {
                 nread = Darwin.fread(buffer, 1, self.bufferSize, local)
-                rc = self.callSSH2 {
-                    guard let rawChannel = self.rawChannel else {
-                        return -1
+                guard nread > 0 else {
+                    break
+                }
+                repeat {
+                    rc = self.callSSH2 {
+                        libssh2_channel_write_ex(handle, 0, buffer, nread)
                     }
-                    return libssh2_channel_write_ex(rawChannel, 0, buffer, nread)
-                }
-                if rc < 0 {
-                    return false
-                }
-                total += Int64(rc)
-                if !progress(total, fileSize) {
-                    return false
-                }
-            } while nread > 0
+                    if rc < 0 {
+                        return false
+                    }
+                    total += Int64(rc)
+                    nread -= rc
+                    if !progress(total, fileSize) {
+                        return false
+                    }
+                } while nread > 0
+            } while true
 
             return true
         }

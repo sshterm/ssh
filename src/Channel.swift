@@ -80,7 +80,7 @@ public extension SSH {
                 if rc > 0 {
                     data.append(stdout)
                 }
-            } while self.isPol()
+            } while self.isRead
             _ = self.sendEOF()
             self.close(.channel)
             return data
