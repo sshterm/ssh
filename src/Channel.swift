@@ -60,7 +60,31 @@ public extension SSH {
         guard await openChannel() else {
             return nil
         }
-        return await call {
+        var data = Data()
+        guard await exec(command: command, { d in
+            data.append(d)
+            return true
+        }) else {
+            return nil
+        }
+        return data
+    }
+
+    /// 执行远程命令并处理输出
+    /// - Parameters:
+    ///   - command: 要执行的命令字符串
+    ///   - callback: 处理命令输出的回调函数，接收Data类型参数，返回布尔值
+    /// - Returns: 命令执行是否成功的布尔值
+    func exec(command: String, _ callback: @escaping (Data) -> Bool) async -> Bool {
+        guard await openChannel() else {
+            return false
+        }
+        guard await requestPty() else {
+            return false
+        }
+        var ok = true
+
+        return await withUnsafeContinuation { continuation in
             let code = self.callSSH2 {
                 guard let rawChannel = self.rawChannel else {
                     return -1
@@ -69,21 +93,56 @@ public extension SSH {
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 self.close(.channel)
-                return nil
+                return
             }
-            var data = Data()
-            repeat {
-                let (stdout, rc) = self.read()
-                guard rc >= 0 else {
-                    break
+            self.channelBlocking(false)
+            self.cancelSources()
+
+            self.socketSource = DispatchSource.makeReadSource(fileDescriptor: self.sockfd, queue: self.queue)
+            self.socketSource?.setEventHandler {
+                repeat {
+                    let (stdout, rc, dtderr, erc) = self.read()
+                    guard rc > 0 || erc > 0 else {
+                        guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
+                            ok = false
+                            self.socketSource?.cancel()
+                            return
+                        }
+                        break
+                    }
+                    if rc > 0 {
+                        if !callback(stdout) {
+                            break
+                        }
+                    } else if erc > 0 {
+                        ok = false
+                        if !callback(dtderr) {
+                            break
+                        }
+                    }
+                    if self.receivedEOF || !self.isConnected {
+                        break
+                    }
+                } while self.isPol()
+                if !self.isRead {
+                    self.socketSource?.cancel()
+                    return
                 }
-                if rc > 0 {
-                    data.append(stdout)
+                if self.receivedEOF || !self.isConnected {
+                    self.socketSource?.cancel()
+                    return
                 }
-            } while self.isRead
-            _ = self.sendEOF()
-            self.close(.channel)
-            return data
+            }
+            self.socketSource?.setCancelHandler {
+                #if DEBUG
+                    print("轮询socket关闭")
+                #endif
+                _ = self.sendEOF()
+                self.close(.channel)
+                continuation.resume(returning: ok)
+                self.cancelSources()
+            }
+            self.socketSource?.resume()
         }
     }
 

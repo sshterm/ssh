@@ -11,8 +11,6 @@ public extension SSH {
     /// - Returns: 如果启动成功返回true，否则返回false
     func shell() async -> Bool {
         await call {
-            self.channelBlocking(false)
-            self.cancelSources()
             self.poll()
             let code = self.callSSH2 {
                 guard let rawChannel = self.rawChannel else {
@@ -76,11 +74,10 @@ public extension SSH {
 
     // poll方法用于轮询socket，读取标准输出和错误输出，并在适当的时候关闭通道。
     func poll() {
+        channelBlocking(false)
+        cancelSources()
         socketSource = DispatchSource.makeReadSource(fileDescriptor: sockfd, queue: queue)
         socketSource?.setEventHandler {
-            #if DEBUG
-                print("轮询socket")
-            #endif
             repeat {
                 let (stdout, rc, dtderr, erc) = self.read()
                 guard rc > 0 || erc > 0 else {
@@ -96,10 +93,9 @@ public extension SSH {
                     self.onData(dtderr, false)
                 }
                 if self.receivedEOF || !self.isConnected {
-                    self.closeShell()
-                    return
+                    break
                 }
-            } while true
+            } while self.isPol()
             if !self.isRead {
                 self.closeShell()
                 return
@@ -108,9 +104,6 @@ public extension SSH {
                 self.closeShell()
                 return
             }
-            #if DEBUG
-                print("轮询socket end")
-            #endif
         }
         socketSource?.setCancelHandler {
             #if DEBUG
