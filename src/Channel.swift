@@ -53,29 +53,34 @@ public extension SSH {
         !(receivedEOF || receivedExit)
     }
 
-    /// 执行一个SSH命令，并异步返回命令执行结果的数据。
-    /// - Parameter command: 要执行的SSH命令字符串。
-    /// - Returns: 返回一个可选的Data类型，如果命令执行成功则包含输出数据，否则为nil。
-    func exec(command: String) async -> Data? {
+    /// 执行给定的命令，并异步返回标准输出和标准错误的数据。
+    /// - Parameter command: 要执行的命令字符串。
+    /// - Returns: 一个元组，包含标准输出数据和标准错误数据。
+    func exec(command: String) async -> (stdout: Data?, dtderr: Data?) {
         guard await openChannel() else {
-            return nil
+            return (nil, nil)
         }
-        var data = Data()
+        var stdout = Data()
+        var dtderr = Data()
         guard await exec(command: command, { d in
-            data.append(d)
+            stdout.append(d)
+            return true
+        }, { d in
+            dtderr.append(d)
             return true
         }) else {
-            return nil
+            return (nil, nil)
         }
-        return data
+        return (stdout, dtderr)
     }
 
-    /// 执行远程命令并处理输出
-    /// - Parameters:
-    ///   - command: 要执行的命令字符串
-    ///   - callback: 处理命令输出的回调函数，接收Data类型参数，返回布尔值
-    /// - Returns: 命令执行是否成功的布尔值
-    func exec(command: String, _ callback: @escaping (Data) -> Bool) async -> Bool {
+    // exec 函数用于执行一个命令，并通过回调函数处理标准输出和错误输出。
+    // 参数:
+    // - command: 要执行的命令字符串
+    // - callout: 一个闭包，当接收到标准输出数据时调用，返回一个布尔值表示是否继续处理
+    // - callerr: 一个闭包，当接收到错误输出数据时调用，返回一个布尔值表示是否继续处理
+    // 返回值: 一个异步的布尔值，表示命令执行是否成功
+    func exec(command: String, _ callout: @escaping (Data) -> Bool, _ callerr: @escaping (Data) -> Bool) async -> Bool {
         guard await openChannel() else {
             return false
         }
@@ -93,6 +98,7 @@ public extension SSH {
             }
             guard code == LIBSSH2_ERROR_NONE else {
                 self.close(.channel)
+                continuation.resume(returning: false)
                 return
             }
             self.channelBlocking(false)
@@ -115,13 +121,14 @@ public extension SSH {
                         break
                     }
                     if rc > 0 {
-                        if !callback(stdout) {
-                            break
+                        if !callout(stdout) {
+                            self.cancelSources()
+                            return
                         }
                     } else if erc > 0 {
-                        ok = false
-                        if !callback(dtderr) {
-                            break
+                        if !callerr(dtderr) {
+                            self.cancelSources()
+                            return
                         }
                     }
                     if self.receivedEOF || !self.isConnected {

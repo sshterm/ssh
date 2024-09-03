@@ -50,7 +50,8 @@ public extension SSH {
     /// 获取系统的平均负载信息
     /// - Returns: 返回一个可选的LoadAverage结构体，如果获取失败则返回nil
     func getLoadAverage() async -> LoadAverage? {
-        guard let text = await exec(command: "cat /proc/loadavg")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "cat /proc/loadavg")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
         let lines = text.components(separatedBy: .whitespaces)
@@ -86,9 +87,11 @@ public extension SSH {
     /// 获取内存信息的异步函数
     /// - Returns: 返回一个可选的MemoryInfo结构体，如果获取失败则返回nil
     func getMemoryInfo() async -> MemoryInfo? {
-        guard let text = await exec(command: "cat /proc/meminfo")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "cat /proc/meminfo")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
+
         let lines = text.components(separatedBy: .newlines)
         var memory = MemoryInfo()
         for line in lines {
@@ -127,7 +130,8 @@ public extension SSH {
     /// 获取系统状态的异步函数
     /// - Returns: 返回一个可选的SystemStat结构体，如果获取失败则返回nil
     func getSystemStat() async -> SystemStat? {
-        guard let text = await exec(command: "cat /proc/stat |grep -E \"ctxt|btime|procs_running|procs_blocked\"")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "cat /proc/stat |grep -E \"ctxt|btime|procs_running|procs_blocked\"")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
         let lines = text.components(separatedBy: .newlines)
@@ -223,7 +227,8 @@ public extension SSH {
     /// - Parameter sleep: 在获取两次CPU时间之间等待的秒数，默认为1秒
     /// - Returns: 返回一个包含两个CpuTimes对象的数组，分别代表获取时间点前后的CPU时间信息，如果获取失败则返回nil
     private func getCpuTimes(sleep: Int = 1) async -> [CpuTimes]? {
-        guard let text = await exec(command: "cpuTime1=$(cat /proc/stat |grep 'cpu ' |awk '{print $2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11}')\nsleep \(sleep)\ncpuTime2=$(cat /proc/stat |grep 'cpu ' |awk '{print $2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11}')\necho \"$cpuTime1|$cpuTime2\"")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "cpuTime1=$(cat /proc/stat |grep 'cpu ' |awk '{print $2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11}')\nsleep \(sleep)\ncpuTime2=$(cat /proc/stat |grep 'cpu ' |awk '{print $2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11}')\necho \"$cpuTime1|$cpuTime2\"")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
 
@@ -258,7 +263,8 @@ public extension SSH {
     // - 返回值:
     //   - DiskIoInfoAll对象，包含磁盘的读写统计信息，如果获取失败则返回nil
     func getDiskIoInfoAll(sleep: Int = 1) async -> DiskIoInfoAll? {
-        guard let text = await exec(command: "diskRun1=$(cat /proc/diskstats |awk '{print $3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13\",\"$14}')\nsleep \(sleep)\ndiskRun2=$(cat /proc/diskstats |awk '{print $3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13\",\"$14}')\necho \"$diskRun1|$diskRun2\"")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "diskRun1=$(cat /proc/diskstats |awk '{print $3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13\",\"$14}')\nsleep \(sleep)\ndiskRun2=$(cat /proc/diskstats |awk '{print $3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13\",\"$14}')\necho \"$diskRun1|$diskRun2\"")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
 
@@ -352,7 +358,8 @@ public extension SSH {
     /// - Parameter sleep: 两次采样之间的等待时间（秒）
     /// - Returns: 网络IO信息结构体，如果获取失败则返回nil
     func getNetworkIoInfoAll(sleep: Int = 1) async -> NetworkIoInfoAll? {
-        guard let text = await exec(command: "networkRun1=$(cat /proc/net/dev | tail -n +3 |awk '{print $1\",\"$2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13}')\nsleep \(sleep)\nnetworkRun2=$(cat /proc/net/dev | tail -n +3 |awk '{print $1\",\"$2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13}')\necho \"$networkRun1|$networkRun2\"")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "networkRun1=$(cat /proc/net/dev | tail -n +3 |awk '{print $1\",\"$2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13}')\nsleep \(sleep)\nnetworkRun2=$(cat /proc/net/dev | tail -n +3 |awk '{print $1\",\"$2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7\",\"$8\",\"$9\",\"$10\",\"$11\",\"$12\",\"$13}')\necho \"$networkRun1|$networkRun2\"")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
 
@@ -440,7 +447,8 @@ public extension SSH {
     /// 然后将获取到的文本数据转换为Double类型的数组返回。
     /// 如果命令执行失败或转换后的数据为空，则返回nil。
     func getTemp() async -> [Double]? {
-        guard let text = await exec(command: "cat /sys/class/hwmon/hwmon[0-9]/temp1_input")?.trim(),!text.isEmpty else {
+        let (text, _) = await exec(command: "cat /sys/class/hwmon/hwmon[0-9]/temp1_input")
+        guard let text = text?.trim(),!text.isEmpty else {
             return nil
         }
         let lines = text.components(separatedBy: .newlines).map { Double($0) ?? 0 }.map { $0 / 1000 }
