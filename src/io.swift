@@ -46,7 +46,7 @@ public class io {
                 if !progress(total) {
                     return total
                 }
-            } while nread > 0
+            } while nread > 0 && w.hasSpaceAvailable
         }
         return total
     }
