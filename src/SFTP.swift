@@ -399,41 +399,16 @@ public extension SSH {
             guard let handle else {
                 return false
             }
-            defer {
-                libssh2_sftp_close_handle(handle)
+
+            let fileSize = Int64(fileinfo.filesize)
+            self.isBlocking = true
+
+            guard io.Copy(local, SFTPInputStream(handle: handle, size: fileSize), self.bufferSize, { send in
+                progress(send, fileSize)
+            }) == fileSize else {
+                return false
             }
 
-            var bufferSize = self.bufferSize
-            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
-            defer {
-                buffer.deallocate()
-            }
-
-            let filesize = Int64(fileinfo.filesize)
-            var rc, n: Int
-            var total: Int64 = 0
-            while total < filesize {
-                if (filesize - total) < bufferSize {
-                    bufferSize = size_t(filesize - total)
-                }
-                rc = self.callSSH2 {
-                    libssh2_sftp_read(handle, buffer, bufferSize)
-                }
-                guard rc > 0 else {
-                    break
-                }
-                repeat {
-                    n = local.write(buffer, maxLength: rc)
-                    if n < 0 {
-                        return false
-                    }
-                    total += Int64(n)
-                    rc -= n
-                    if !progress(total, filesize) {
-                        return false
-                    }
-                } while rc > 0
-            }
             return true
         }
     }
@@ -519,37 +494,12 @@ public extension SSH {
             guard let handle else {
                 return false
             }
-            defer {
-                libssh2_sftp_close_handle(handle)
+            self.isBlocking = true
+            guard io.Copy(SFTPOutputStream(handle: handle), local, self.bufferSize, { send in
+                progress(send, fileSize)
+            }) == fileSize else {
+                return false
             }
-
-            var nread, rc: Int
-            var total: Int64 = 0
-            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
-            defer {
-                buffer.deallocate()
-            }
-
-            while local.hasBytesAvailable {
-                nread = local.read(buffer, maxLength: self.bufferSize)
-                guard nread > 0 else {
-                    break
-                }
-                repeat {
-                    rc = self.callSSH2 {
-                        libssh2_sftp_write(handle, buffer, nread)
-                    }
-                    if rc < 0 {
-                        return false
-                    }
-                    total += Int64(rc)
-                    nread -= rc
-                    if !progress(total, fileSize) {
-                        return false
-                    }
-                } while nread > 0
-            }
-
             return true
         }
     }

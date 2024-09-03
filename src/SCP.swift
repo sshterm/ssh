@@ -42,45 +42,11 @@ public extension SSH {
             guard let handle else {
                 return false
             }
-            defer {
-                _ = self.callSSH2 {
-                    libssh2_channel_send_eof(handle)
-                }
-                libssh2_channel_free(handle)
-            }
-
-            var bufferSize = self.bufferSize
-            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
-            defer {
-                buffer.deallocate()
-            }
-            let filesize = Int64(fileinfo.st_size)
-            var rc, n: Int
-            var total: Int64 = 0
-            while total < filesize {
-                if (filesize - total) < bufferSize {
-                    bufferSize = size_t(filesize - total)
-                }
-                rc = self.callSSH2 {
-                    libssh2_channel_read_ex(handle, 0, buffer, bufferSize)
-                }
-                guard rc > 0 else {
-                    break
-                }
-                repeat {
-                    guard rc > 0 else {
-                        break
-                    }
-                    n = local.write(buffer, maxLength: rc)
-                    if n < 0 {
-                        return false
-                    }
-                    total += Int64(n)
-                    rc -= n
-                    if !progress(total, filesize) {
-                        return false
-                    }
-                } while rc > 0
+            let fileSize = Int64(fileinfo.st_size)
+            guard io.Copy(local, ChannelInputStream(handle: handle, size: fileSize), self.bufferSize, { send in
+                progress(send, fileSize)
+            }) == fileSize else {
+                return false
             }
 
             return true
@@ -140,49 +106,17 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            local.open()
-            defer {
-                local.close()
-            }
             let handle = self.callSSH2 {
                 libssh2_scp_send64(rawSession, remotePath, permissions.rawValue, fileSize, 0, 0)
             }
             guard let handle else {
                 return false
             }
-            defer {
-                _ = self.callSSH2 {
-                    libssh2_channel_send_eof(handle)
-                }
-                libssh2_channel_free(handle)
+            guard io.Copy(ChannelOutputStream(handle: handle), local, self.bufferSize, { send in
+                progress(send, fileSize)
+            }) == fileSize else {
+                return false
             }
-            libssh2_channel_set_blocking(handle, 1)
-            var nread, rc: Int
-            var total: Int64 = 0
-            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
-            defer {
-                buffer.deallocate()
-            }
-            while local.hasBytesAvailable {
-                nread = local.read(buffer, maxLength: self.bufferSize)
-                guard nread > 0 else {
-                    break
-                }
-                repeat {
-                    rc = self.callSSH2 {
-                        libssh2_channel_write_ex(handle, 0, buffer, nread)
-                    }
-                    if rc < 0 {
-                        return false
-                    }
-                    total += Int64(rc)
-                    nread -= rc
-                    if !progress(total, fileSize) {
-                        return false
-                    }
-                } while nread > 0
-            }
-
             return true
         }
     }
