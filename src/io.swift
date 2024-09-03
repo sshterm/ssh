@@ -11,7 +11,7 @@ public class io {
     ///   - r: 源输入流
     ///   - bufferSize: 缓冲区大小，默认为16384字节
     /// - Returns: 复制的字节数
-    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000) -> Int64 {
+    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000) -> Int {
         io.Copy(w, r, bufferSize) { _ in
             true
         }
@@ -24,12 +24,12 @@ public class io {
     ///   - bufferSize: 缓冲区大小，默认为16384字节
     ///   - progress: 进度回调函数，接收已复制的字节数作为参数，返回布尔值决定是否继续复制
     /// - Returns: 复制的字节数
-    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
+    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int) -> Bool) -> Int {
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
-        defer{
+        defer {
             buffer.deallocate()
         }
-        var total: Int64 = 0
+        var total = 0
         var nread, rc: Int
         while r.hasBytesAvailable {
             nread = r.read(buffer, maxLength: bufferSize)
@@ -39,9 +39,9 @@ public class io {
             repeat {
                 rc = w.write(buffer, maxLength: nread)
                 if rc < 0 {
-                    return total
+                    return rc
                 }
-                total += Int64(rc)
+                total += rc
                 nread -= rc
                 if !progress(total) {
                     return total
@@ -49,5 +49,15 @@ public class io {
             } while nread > 0
         }
         return total
+    }
+
+    // 冗余方法
+    public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000) -> Int {
+        io.Copy(w, r, bufferSize)
+    }
+
+    // 冗余方法
+    public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int) -> Bool) -> Int {
+        io.Copy(w, r, bufferSize, progress)
     }
 }
