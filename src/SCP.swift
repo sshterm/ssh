@@ -30,14 +30,16 @@ public extension SSH {
     // - Returns: 一个布尔值，表示下载是否成功。
     func download(remotePath: String, local: OutputStream, sftp: Bool = false, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
-            local.open()
-            defer {
-                local.close()
-            }
             guard let rawSession = self.rawSession else {
                 return false
             }
             let remote = SessionInputStream(rawSession: rawSession, remotePath: remotePath, sftp: sftp)
+            remote.open()
+            local.open()
+            defer {
+                remote.close()
+                local.close()
+            }
             guard io.Copy(local, remote, self.bufferSize, { send in
                 progress(send, Int64(remote.size))
             }) == Int64(remote.size) else {
@@ -104,7 +106,14 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            guard io.Copy(SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: sftp), local, self.bufferSize, { send in
+            let remote = SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: sftp)
+            remote.open()
+            local.open()
+            defer {
+                remote.close()
+                local.close()
+            }
+            guard io.Copy(remote, local, self.bufferSize, { send in
                 progress(send, fileSize)
             }) == fileSize else {
                 return false

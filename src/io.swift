@@ -26,11 +26,7 @@ public class io {
     /// - Returns: 复制的字节数
     public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
-        w.open()
-        r.open()
-        defer {
-            w.close()
-            r.close()
+        defer{
             buffer.deallocate()
         }
         var total: Int64 = 0

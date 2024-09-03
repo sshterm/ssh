@@ -379,14 +379,16 @@ public extension SSH {
     /// - Returns: 一个布尔值，表示文件是否成功读取。
     func readfile(remotePath: String, local: OutputStream, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
-            local.open()
-            defer {
-                local.close()
-            }
             guard let rawSession = self.rawSession else {
                 return false
             }
             let remote = SessionInputStream(rawSession: rawSession, remotePath: remotePath)
+            remote.open()
+            local.open()
+            defer {
+                remote.close()
+                local.close()
+            }
             guard io.Copy(local, remote, self.bufferSize, { send in
                 progress(send, Int64(remote.size))
             }) == Int64(remote.size) else {
@@ -464,14 +466,17 @@ public extension SSH {
     // 返回值: 上传成功返回 true，否则返回 false。
     func writefile(local: InputStream, fileSize: Int64, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
-            local.open()
-            defer {
-                local.close()
-            }
             guard let rawSession = self.rawSession else {
                 return false
             }
-            guard io.Copy(SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions), local, self.bufferSize, { send in
+            let remote = SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions)
+            remote.open()
+            local.open()
+            defer {
+                remote.close()
+                local.close()
+            }
+            guard io.Copy(remote, local, self.bufferSize, { send in
                 progress(send, fileSize)
             }) == fileSize else {
                 return false

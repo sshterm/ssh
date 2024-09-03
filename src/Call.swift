@@ -144,9 +144,9 @@ extension SSH {
     }
 
     #if DEBUG
-        public func disconnect() {
-            close()
-            sessionDelegate?.disconnect(ssh: self)
-        }
+        /** public func disconnect() {
+             close()
+             sessionDelegate?.disconnect(ssh: self)
+         } */
     #endif
 }

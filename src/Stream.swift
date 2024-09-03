@@ -11,8 +11,8 @@ class SessionInputStream: InputStream {
     var rawSession: OpaquePointer
     let remotePath: String
     let sftp: Bool
-    var got: Int = 0 // 已读取的字节数
-    var nread: Int = 0 // 最近一次读取的字节数
+    var got: Int = 0
+    var nread: Int = 0
 
     init(rawSession: OpaquePointer, remotePath: String, sftp: Bool = true) {
         self.rawSession = rawSession
@@ -102,7 +102,6 @@ class SessionOutputStream: OutputStream {
         super.init()
     }
 
-    // 重写write方法，将数据写入SSH通道
     override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
         nwrite = sftp ? libssh2_sftp_write(handle, buffer, len) : libssh2_channel_write_ex(handle, 0, buffer, len)
         return nwrite
