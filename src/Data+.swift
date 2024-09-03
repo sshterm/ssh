@@ -50,4 +50,8 @@ public extension Data {
     var countInt32: Int32 {
         Int32(count) // 将count属性的值转换为Int32类型
     }
+
+    var countInt64: Int64 {
+        Int64(count) // 将count属性的值转换为Int32类型
+    }
 }

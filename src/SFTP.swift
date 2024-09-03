@@ -338,52 +338,15 @@ public extension SSH {
     // - 参数path: 文件路径
     // - 参数progress: 进度回调，返回已读取的总字节数和文件总大小
     // - 返回值: 文件内容的Data对象，如果失败则返回nil
-    func readfile(path: String, progress: @escaping (_ send: Int, _ size: Int) -> Bool) async -> Data? {
-        await call {
-            guard let rawSFTP = self.rawSFTP else {
-                return nil
-            }
-            var fileinfo = LIBSSH2_SFTP_ATTRIBUTES()
-            let code = self.callSSH2 {
-                libssh2_sftp_stat_ex(rawSFTP, path, path.countUInt32, LIBSSH2_SFTP_STAT, &fileinfo)
-            }
-            guard code == LIBSSH2_ERROR_NONE else {
-                return nil
-            }
-            let handle = self.callSSH2 {
-                libssh2_sftp_open_ex(rawSFTP, path, path.countUInt32, UInt(LIBSSH2_FXF_READ), 0, LIBSSH2_SFTP_OPENFILE)
-            }
-            guard let handle else {
-                return nil
-            }
-            defer {
-                libssh2_sftp_close_handle(handle)
-            }
-            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
-            defer {
-                buffer.deallocate()
-            }
-            var data = Data()
-            var rc: Int
-            var total = 0
-            let filesize = Int(fileinfo.filesize)
-
-            while total < filesize {
-                rc = self.callSSH2 {
-                    libssh2_sftp_read(handle, buffer, self.bufferSize)
-                }
-                if rc > 0 {
-                    data.append(Data(bytes: buffer, count: rc))
-                    total += rc
-                    if !progress(total, filesize) {
-                        return nil
-                    }
-                } else if rc < 0 {
-                    return nil
-                }
-            }
-            return data
+    func readfile(path: String, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Data? {
+        let stream = OutputStream.toMemory()
+        guard await readfile(remotePath: path, local: stream, progress: progress) else {
+            return nil
         }
+        guard let data = stream.property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
+            return nil
+        }
+        return data
     }
 
     // 简化版的readfile函数，不接受进度回调，默认一直读取到文件结束
@@ -395,14 +358,31 @@ public extension SSH {
         }
     }
 
-    // 读取远程文件并将其保存到本地路径
-    // - Parameters:
-    //   - remotePath: 远程文件路径
-    //   - localPath: 本地保存路径
-    //   - progress: 进度回调，返回已下载的总大小和文件总大小
-    // - Returns: 如果成功读取并保存文件则返回true，否则返回false
+    /// 异步读取远程文件并将其保存到本地路径
+    /// - Parameters:
+    ///   - remotePath: 远程文件的路径
+    ///   - localPath: 本地保存文件的路径
+    ///   - progress: 一个闭包，用于报告进度，接收两个Int64类型的参数，分别代表已发送的字节数和总字节数，返回一个Bool值表示是否继续传输
+    /// - Returns: 一个Bool值，表示文件是否成功读取并保存到本地
     func readfile(remotePath: String, localPath: String, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
+        guard let stream = OutputStream(toFileAtPath: localPath, append: false) else {
+            return false
+        }
+        return await readfile(remotePath: remotePath, local: stream, progress: progress)
+    }
+
+    /// 异步读取远程文件并将其写入到本地输出流中。
+    /// - Parameters:
+    ///   - remotePath: 远程文件的路径。
+    ///   - local: 用于写入数据的本地输出流。
+    ///   - progress: 一个闭包，用于报告进度，接收已发送的字节数和文件总大小，返回一个布尔值表示是否继续传输。
+    /// - Returns: 一个布尔值，表示文件是否成功读取。
+    func readfile(remotePath: String, local: OutputStream, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
+            local.open()
+            defer {
+                local.close()
+            }
             guard let rawSFTP = self.rawSFTP else {
                 return false
             }
@@ -422,11 +402,9 @@ public extension SSH {
             defer {
                 libssh2_sftp_close_handle(handle)
             }
-            let localFile = Darwin.open(localPath, O_WRONLY | O_CREAT | O_TRUNC, 0644)
-            defer {
-                Darwin.close(localFile)
-            }
-            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
+
+            var bufferSize = self.bufferSize
+            let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
             defer {
                 buffer.deallocate()
             }
@@ -435,24 +413,23 @@ public extension SSH {
             var rc, n: Int
             var total: Int64 = 0
             while total < filesize {
+                if (filesize - total) < bufferSize {
+                    bufferSize = size_t(filesize - total)
+                }
                 rc = self.callSSH2 {
-                    libssh2_sftp_read(handle, buffer, self.bufferSize)
+                    libssh2_sftp_read(handle, buffer, bufferSize)
                 }
                 guard rc > 0 else {
                     break
                 }
                 repeat {
-                    if rc > 0 {
-                        n = Darwin.write(localFile, buffer, rc)
-                        if n < 0 {
-                            return false
-                        }
-                        total += Int64(n)
-                        rc -= n
-                        if !progress(total, filesize) {
-                            return false
-                        }
-                    } else if rc < 0 {
+                    n = local.write(buffer, maxLength: rc)
+                    if n < 0 {
+                        return false
+                    }
+                    total += Int64(n)
+                    rc -= n
+                    if !progress(total, filesize) {
                         return false
                     }
                 } while rc > 0
@@ -480,47 +457,9 @@ public extension SSH {
     ///   - permissions: 文件权限，默认为默认权限
     ///   - progress: 进度回调，返回已写入的总字节数和文件总大小
     /// - Returns: 写入成功返回true，否则返回false
-    func writefile(path: String, data: Data, permissions: FilePermissions = .default, progress: @escaping (_ send: Int, _ size: Int) -> Bool) async -> Bool {
-        await call {
-            guard let rawSFTP = self.rawSFTP else {
-                return false
-            }
-            let handle = self.callSSH2 {
-                libssh2_sftp_open_ex(rawSFTP, path, path.countUInt32, UInt(LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT | LIBSSH2_FXF_TRUNC), permissions.rawInt, LIBSSH2_SFTP_OPENFILE)
-            }
-            guard let handle else {
-                return false
-            }
-            defer {
-                libssh2_sftp_close_handle(handle)
-            }
-
-            var left = data.count
-            var offset = 0
-            let size = data.count
-
-            repeat {
-                let ret = data.withUnsafeBytes { ptr -> Int in
-                    guard let rawBytes = ptr.bindMemory(to: Int8.self).baseAddress else {
-                        return -1
-                    }
-                    return self.callSSH2 {
-                        libssh2_sftp_write(handle, rawBytes.advanced(by: offset), left)
-                    }
-                }
-                if ret > 0 {
-                    left -= Int(ret)
-                    offset += Int(ret)
-                    if !progress(offset, size) {
-                        return false
-                    }
-                } else if ret < 0 {
-                    return false
-                }
-            } while left > 0
-
-            return true
-        }
+    func writefile(path: String, data: Data, permissions: FilePermissions = .default, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
+        let stream = InputStream(data: data)
+        return await writefile(local: stream, fileSize: data.countInt64, remotePath: path, permissions: permissions, progress: progress)
     }
 
     /// 获取指定文件的大小，如果文件不存在或是一个目录，则返回nil。
@@ -549,15 +488,30 @@ public extension SSH {
     ///   - progress: 进度回调，返回已上传的总字节数和文件总大小
     /// - Returns: 上传成功返回true，否则返回false
     func writefile(localPath: String, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
+        guard let stream = InputStream(fileAtPath: localPath) else {
+            return false
+        }
+        guard let fileSize = getFileSize(filePath: localPath) else {
+            return false
+        }
+        return await writefile(local: stream, fileSize: fileSize, remotePath: remotePath, permissions: permissions, progress: progress)
+    }
+
+    // writefile 函数用于将本地文件流上传到远程服务器指定路径，并可设置文件权限和上传进度回调。
+    // - local: 本地文件输入流，用于读取要上传的文件内容。
+    // - fileSize: 本地文件的大小，以字节为单位。
+    // - remotePath: 远程服务器上文件的存储路径。
+    // - permissions: 可选参数，指定远程文件的权限，默认为默认权限。
+    // - progress: 上传进度的回调函数，接收已发送的字节数和文件总大小，返回布尔值表示是否继续上传。
+    // 返回值: 上传成功返回 true，否则返回 false。
+    func writefile(local: InputStream, fileSize: Int64, remotePath: String, permissions: FilePermissions = .default, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         await call {
+            local.open()
+            defer {
+                local.close()
+            }
             guard let rawSFTP = self.rawSFTP else {
                 return false
-            }
-            guard let local = Darwin.fopen(localPath, "rb") else {
-                return false
-            }
-            defer {
-                Darwin.fclose(local)
             }
             let handle = self.callSSH2 {
                 libssh2_sftp_open_ex(rawSFTP, remotePath, remotePath.countUInt32, UInt(LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT | LIBSSH2_FXF_TRUNC), permissions.rawInt, LIBSSH2_SFTP_OPENFILE)
@@ -568,9 +522,7 @@ public extension SSH {
             defer {
                 libssh2_sftp_close_handle(handle)
             }
-            guard let fileSize = self.getFileSize(filePath: localPath) else {
-                return false
-            }
+
             var nread, rc: Int
             var total: Int64 = 0
             let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: self.bufferSize)
@@ -578,8 +530,8 @@ public extension SSH {
                 buffer.deallocate()
             }
 
-            repeat {
-                nread = Darwin.fread(buffer, 1, self.bufferSize, local)
+            while local.hasBytesAvailable {
+                nread = local.read(buffer, maxLength: self.bufferSize)
                 guard nread > 0 else {
                     break
                 }
@@ -596,7 +548,7 @@ public extension SSH {
                         return false
                     }
                 } while nread > 0
-            } while true
+            }
 
             return true
         }

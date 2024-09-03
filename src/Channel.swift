@@ -100,7 +100,6 @@ public extension SSH {
             }
             self.channelBlocking(false)
             self.cancelSources()
-
             self.socketSource = DispatchSource.makeReadSource(fileDescriptor: self.sockfd, queue: self.queue)
             self.socketSource?.setEventHandler {
                 self.lockRow.lock()
