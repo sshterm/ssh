@@ -48,7 +48,6 @@ public extension SSH {
             }) == fileSize else {
                 return false
             }
-
             return true
         }
     }
