@@ -100,12 +100,16 @@ public extension SSH {
 
             self.socketSource = DispatchSource.makeReadSource(fileDescriptor: self.sockfd, queue: self.queue)
             self.socketSource?.setEventHandler {
+                self.lockRow.lock()
+                defer {
+                    self.lockRow.unlock()
+                }
                 repeat {
                     let (stdout, rc, dtderr, erc) = self.read()
                     guard rc > 0 || erc > 0 else {
                         guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
                             ok = false
-                            self.socketSource?.cancel()
+                            self.cancelSources()
                             return
                         }
                         break
@@ -121,26 +125,26 @@ public extension SSH {
                         }
                     }
                     if self.receivedEOF || !self.isConnected {
-                        break
+                        self.cancelSources()
+                        return
                     }
                 } while self.isPol()
                 if !self.isRead {
-                    self.socketSource?.cancel()
-                    return
-                }
-                if self.receivedEOF || !self.isConnected {
-                    self.socketSource?.cancel()
+                    self.cancelSources()
                     return
                 }
             }
             self.socketSource?.setCancelHandler {
+                self.lockRow.lock()
+                defer {
+                    self.lockRow.unlock()
+                }
                 #if DEBUG
                     print("轮询socket关闭")
                 #endif
                 _ = self.sendEOF()
                 self.close(.channel)
                 continuation.resume(returning: ok)
-                self.cancelSources()
             }
             self.socketSource?.resume()
         }
