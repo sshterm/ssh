@@ -383,32 +383,15 @@ public extension SSH {
             defer {
                 local.close()
             }
-            guard let rawSFTP = self.rawSFTP else {
+            guard let rawSession = self.rawSession else {
                 return false
             }
-            var fileinfo = LIBSSH2_SFTP_ATTRIBUTES()
-            let code = self.callSSH2 {
-                libssh2_sftp_stat_ex(rawSFTP, remotePath, remotePath.countUInt32, LIBSSH2_SFTP_STAT, &fileinfo)
-            }
-            guard code == LIBSSH2_ERROR_NONE else {
+            let remote = SessionInputStream(rawSession: rawSession, remotePath: remotePath)
+            guard io.Copy(local, remote, self.bufferSize, { send in
+                progress(send, Int64(remote.size))
+            }) == Int64(remote.size) else {
                 return false
             }
-            let handle = self.callSSH2 {
-                libssh2_sftp_open_ex(rawSFTP, remotePath, remotePath.countUInt32, UInt(LIBSSH2_FXF_READ), 0, LIBSSH2_SFTP_OPENFILE)
-            }
-            guard let handle else {
-                return false
-            }
-
-            let fileSize = Int64(fileinfo.filesize)
-            self.isBlocking = true
-
-            guard io.Copy(local, SFTPInputStream(handle: handle, size: fileSize), self.bufferSize, { send in
-                progress(send, fileSize)
-            }) == fileSize else {
-                return false
-            }
-
             return true
         }
     }
@@ -485,17 +468,10 @@ public extension SSH {
             defer {
                 local.close()
             }
-            guard let rawSFTP = self.rawSFTP else {
+            guard let rawSession = self.rawSession else {
                 return false
             }
-            let handle = self.callSSH2 {
-                libssh2_sftp_open_ex(rawSFTP, remotePath, remotePath.countUInt32, UInt(LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT | LIBSSH2_FXF_TRUNC), permissions.rawInt, LIBSSH2_SFTP_OPENFILE)
-            }
-            guard let handle else {
-                return false
-            }
-            self.isBlocking = true
-            guard io.Copy(SFTPOutputStream(handle: handle), local, self.bufferSize, { send in
+            guard io.Copy(SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions), local, self.bufferSize, { send in
                 progress(send, fileSize)
             }) == fileSize else {
                 return false

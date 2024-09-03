@@ -5,140 +5,143 @@
 import CSSH
 import Foundation
 
-class ChannelInputStream: InputStream {
-    let handle: OpaquePointer // SSH通道的句柄
-    var size: Int // 数据流的总大小
+class SessionInputStream: InputStream {
+    var size: Int = 0
+    var handle, raw: OpaquePointer?
+    var rawSession: OpaquePointer
+    let remotePath: String
+    let sftp: Bool
     var got: Int = 0 // 已读取的字节数
     var nread: Int = 0 // 最近一次读取的字节数
 
-    // 初始化方法，接收SSH通道句柄和数据流大小
-    init(handle: OpaquePointer, size: Int64) {
-        self.handle = handle
-        self.size = Int(size)
+    init(rawSession: OpaquePointer, remotePath: String, sftp: Bool = true) {
+        self.rawSession = rawSession
+        self.remotePath = remotePath
+        self.sftp = sftp
         super.init()
     }
 
-    // 重写read方法，从SSH通道读取数据到缓冲区
     override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
-        var amount = len
-        if (size - got) < amount {
-            amount = size - got
+        if sftp {
+            nread = libssh2_sftp_read(handle, buffer, len)
+            got += nread
+            return nread
+        } else {
+            var amount = len
+            if (size - got) < amount {
+                amount = size - got
+            }
+            nread = libssh2_channel_read_ex(handle, 0, buffer, amount)
+            got += nread
+            return nread
         }
-        nread = libssh2_channel_read_ex(handle, 0, buffer, amount)
-        got += nread
-        return nread
     }
 
-    // 打开通道，设置为阻塞模式
     override func open() {
-        libssh2_channel_set_blocking(handle, 1)
+        libssh2_session_set_blocking(rawSession, 1)
+        if sftp {
+            guard let rawSFTP = libssh2_sftp_init(rawSession) else {
+                return
+            }
+            var fileinfo = LIBSSH2_SFTP_ATTRIBUTES()
+
+            guard libssh2_sftp_stat_ex(rawSFTP, remotePath, remotePath.countUInt32, LIBSSH2_SFTP_STAT, &fileinfo) == LIBSSH2_ERROR_NONE else {
+                libssh2_sftp_shutdown(rawSFTP)
+                return
+            }
+            guard let handle = libssh2_sftp_open_ex(rawSFTP, remotePath, remotePath.countUInt32, UInt(LIBSSH2_FXF_READ), 0, LIBSSH2_SFTP_OPENFILE) else {
+                libssh2_sftp_shutdown(rawSFTP)
+                return
+            }
+            size = Int(fileinfo.filesize)
+            self.handle = handle
+            raw = rawSFTP
+        } else {
+            var fileinfo = libssh2_struct_stat()
+            guard let handle = libssh2_scp_recv2(rawSession, remotePath, &fileinfo) else {
+                return
+            }
+            size = Int(fileinfo.st_size)
+            self.handle = handle
+        }
     }
 
-    // 关闭通道，发送EOF并释放资源
     override func close() {
-        libssh2_channel_send_eof(handle)
-        libssh2_channel_free(handle)
+        if sftp {
+            libssh2_sftp_close_handle(handle)
+            libssh2_sftp_shutdown(raw)
+        } else {
+            libssh2_channel_send_eof(handle)
+            libssh2_channel_free(handle)
+        }
     }
 
-    // 判断是否还有可读的字节
     override var hasBytesAvailable: Bool {
-        got < size && nread >= 0
+        if sftp {
+            handle != nil && got < size && nread >= 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
+        } else {
+            handle != nil && got < size && nread >= 0
+        }
     }
 }
 
-class ChannelOutputStream: OutputStream {
-    let handle: OpaquePointer // SSH通道的句柄
-    var nwrite: Int = 0 // 最近一次写入的字节数
-
-    // 初始化方法，接收SSH通道句柄
-    init(handle: OpaquePointer) {
-        self.handle = handle
+class SessionOutputStream: OutputStream {
+    let size: Int64
+    let sftp: Bool
+    let remotePath: String
+    var handle, raw: OpaquePointer?
+    var rawSession: OpaquePointer
+    var nwrite: Int = 0
+    let permissions: FilePermissions
+    init(rawSession: OpaquePointer, remotePath: String, size: Int64, permissions: FilePermissions = .default, sftp: Bool = true) {
+        self.rawSession = rawSession
+        self.remotePath = remotePath
+        self.size = size
+        self.sftp = sftp
+        self.permissions = permissions
         super.init()
     }
 
     // 重写write方法，将数据写入SSH通道
     override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
-        nwrite = libssh2_channel_write_ex(handle, 0, buffer, len)
+        nwrite = sftp ? libssh2_sftp_write(handle, buffer, len) : libssh2_channel_write_ex(handle, 0, buffer, len)
         return nwrite
     }
 
-    // 打开通道，设置为阻塞模式
     override func open() {
-        libssh2_channel_set_blocking(handle, 1)
+        libssh2_session_set_blocking(rawSession, 1)
+        if sftp {
+            guard let rawSFTP = libssh2_sftp_init(rawSession) else {
+                return
+            }
+            guard let handle = libssh2_sftp_open_ex(rawSFTP, remotePath, remotePath.countUInt32, UInt(LIBSSH2_FXF_WRITE | LIBSSH2_FXF_CREAT | LIBSSH2_FXF_TRUNC), permissions.rawInt, LIBSSH2_SFTP_OPENFILE) else {
+                return
+            }
+            self.handle = handle
+            raw = rawSFTP
+        } else {
+            guard let handle = libssh2_scp_send64(rawSession, remotePath, permissions.rawValue, size, 0, 0) else {
+                return
+            }
+            self.handle = handle
+        }
     }
 
-    // 关闭通道，发送EOF并释放资源
     override func close() {
-        libssh2_channel_send_eof(handle)
-        libssh2_channel_free(handle)
+        if sftp {
+            libssh2_sftp_close_handle(handle)
+            libssh2_sftp_shutdown(raw)
+        } else {
+            libssh2_channel_send_eof(handle)
+            libssh2_channel_free(handle)
+        }
     }
 
-    // 判断是否还有可写的空间
     override var hasSpaceAvailable: Bool {
-        nwrite >= 0
-    }
-}
-
-class SFTPInputStream: InputStream {
-    let handle: OpaquePointer // SFTP会话的句柄
-    var size: Int // 数据流的总大小
-    var got: Int = 0 // 已读取的字节数
-    var nread: Int = 0 // 最近一次读取的字节数
-
-    // 初始化方法，接收SFTP会话句柄和数据流大小
-    init(handle: OpaquePointer, size: Int64) {
-        self.handle = handle
-        self.size = Int(size)
-        super.init()
-    }
-
-    // 重写read方法，从SFTP会话读取数据到缓冲区
-    override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
-        nread = libssh2_sftp_read(handle, buffer, len)
-        got += nread
-        return nread
-    }
-
-    // 打开SFTP会话
-    override func open() {}
-
-    // 关闭SFTP会话
-    override func close() {
-        libssh2_sftp_close_handle(handle)
-    }
-
-    // 判断是否还有可读的字节
-    override var hasBytesAvailable: Bool {
-        got < size && nread >= 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
-    }
-}
-
-class SFTPOutputStream: OutputStream {
-    let handle: OpaquePointer // SFTP会话的句柄
-    var nwrite: Int = 0 // 最近一次写入的字节数
-
-    // 初始化方法，接收SFTP会话句柄
-    init(handle: OpaquePointer) {
-        self.handle = handle
-        super.init()
-    }
-
-    // 重写write方法，将数据写入SFTP会话
-    override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
-        nwrite = libssh2_sftp_write(handle, buffer, len)
-        return nwrite
-    }
-
-    // 打开SFTP会话
-    override func open() {}
-
-    // 关闭SFTP会话
-    override func close() {
-        libssh2_sftp_close_handle(handle)
-    }
-
-    // 判断是否还有可写的空间
-    override var hasSpaceAvailable: Bool {
-        nwrite >= 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
+        if sftp {
+            handle != nil && nwrite >= 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
+        } else {
+            handle != nil && nwrite >= 0
+        }
     }
 }

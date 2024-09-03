@@ -35,17 +35,10 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            var fileinfo = libssh2_struct_stat()
-            let handle = self.callSSH2 {
-                libssh2_scp_recv2(rawSession, remotePath, &fileinfo)
-            }
-            guard let handle else {
-                return false
-            }
-            let fileSize = Int64(fileinfo.st_size)
-            guard io.Copy(local, ChannelInputStream(handle: handle, size: fileSize), self.bufferSize, { send in
-                progress(send, fileSize)
-            }) == fileSize else {
+            let remote = SessionInputStream(rawSession: rawSession, remotePath: remotePath, sftp: false)
+            guard io.Copy(local, remote, self.bufferSize, { send in
+                progress(send, Int64(remote.size))
+            }) == Int64(remote.size) else {
                 return false
             }
             return true
@@ -105,13 +98,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            let handle = self.callSSH2 {
-                libssh2_scp_send64(rawSession, remotePath, permissions.rawValue, fileSize, 0, 0)
-            }
-            guard let handle else {
-                return false
-            }
-            guard io.Copy(ChannelOutputStream(handle: handle), local, self.bufferSize, { send in
+            guard io.Copy(SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: false), local, self.bufferSize, { send in
                 progress(send, fileSize)
             }) == fileSize else {
                 return false
