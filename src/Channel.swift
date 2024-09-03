@@ -84,9 +84,6 @@ public extension SSH {
         guard await openChannel() else {
             return false
         }
-        guard await requestPty() else {
-            return false
-        }
         var ok = true
 
         return await withUnsafeContinuation { continuation in
