@@ -82,25 +82,18 @@ public extension SSH {
             defer {
                 self.lockRow.unlock()
             }
-            repeat {
-                let (stdout, rc, dtderr, erc) = self.read()
-                guard rc > 0 || erc > 0 else {
-                    guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
-                        self.cancelSources()
-                        return
-                    }
-                    break
-                }
-                if rc > 0 {
-                    self.onData(stdout, true)
-                } else if erc > 0 {
-                    self.onData(dtderr, false)
-                }
-                if !self.isRead {
+            let (rc, erc) = self.read(PipeOutputStream(callback: { data in
+                self.onData(data, true)
+            }), PipeOutputStream(callback: { data in
+                self.onData(data, false)
+            }))
+            guard rc > 0 || erc > 0 else {
+                guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
                     self.cancelSources()
                     return
                 }
-            } while self.isPol()
+                return
+            }
             if !self.isRead {
                 self.cancelSources()
                 return

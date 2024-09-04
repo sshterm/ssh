@@ -5,7 +5,7 @@
 import CSSH
 import Foundation
 
-class SessionInputStream: InputStream {
+class FileInputStream: InputStream {
     var size: Int64 = 0
     var handle, raw: OpaquePointer?
     var rawSession: OpaquePointer
@@ -87,14 +87,14 @@ class SessionInputStream: InputStream {
 
     override var hasBytesAvailable: Bool {
         if sftp {
-            handle != nil && got < size && nread >= 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
+            handle != nil && got < size && nread > 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
         } else {
-            handle != nil && got < size && nread >= 0
+            handle != nil && got < size && nread > 0
         }
     }
 }
 
-class SessionOutputStream: OutputStream {
+class FileOutputStream: OutputStream {
     let size: Int64
     let sftp: Bool
     let remotePath: String
@@ -156,10 +156,80 @@ class SessionOutputStream: OutputStream {
 
     override var hasSpaceAvailable: Bool {
         if sftp {
-            handle != nil && nwrite >= 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
+            handle != nil && nwrite > 0 && libssh2_sftp_last_error(handle) == LIBSSH2_FX_OK
         } else {
-            handle != nil && nwrite >= 0
+            handle != nil && nwrite > 0
         }
+    }
+}
+
+class ChannelInputStream: InputStream {
+    let handle: OpaquePointer
+    let err: Bool
+    var nread: Int = 0
+
+    init(handle: OpaquePointer, err: Bool = false) {
+        self.handle = handle
+        self.err = err
+        super.init()
+    }
+
+    override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
+        nread = libssh2_channel_read_ex(handle, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, len)
+        return nread
+    }
+
+    override func open() {}
+
+    override func close() {}
+
+    override var hasBytesAvailable: Bool {
+        nread > 0
+    }
+}
+
+class ChannelOutputStream: OutputStream {
+    let handle: OpaquePointer
+    let err: Bool
+    var nwrite: Int = 0
+    init(handle: OpaquePointer, err: Bool = false) {
+        self.handle = handle
+        self.err = err
+        super.init()
+    }
+
+    override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
+        nwrite = libssh2_channel_write_ex(handle, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, len)
+        return nwrite
+    }
+
+    override func open() {}
+
+    override func close() {}
+
+    override var hasSpaceAvailable: Bool {
+        nwrite > 0
+    }
+}
+
+class PipeOutputStream: OutputStream {
+    let callback: (Data) -> Void
+    init(callback: @escaping (Data) -> Void) {
+        self.callback = callback
+        super.init()
+    }
+
+    override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
+        callback(Data(bytes: buffer, count: len))
+        return len
+    }
+
+    override func open() {}
+
+    override func close() {}
+
+    override var hasSpaceAvailable: Bool {
+        return true
     }
 }
 

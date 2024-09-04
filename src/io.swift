@@ -35,7 +35,7 @@ public class io {
         }
         var total: Int64 = 0
         var nread, rc: Int
-        while r.hasBytesAvailable {
+        repeat {
             nread = r.read(buffer, maxLength: bufferSize)
             guard nread > 0 else {
                 break
@@ -51,7 +51,7 @@ public class io {
                     return total
                 }
             } while nread > 0 && w.hasSpaceAvailable
-        }
+        } while r.hasBytesAvailable
         return total
     }
 

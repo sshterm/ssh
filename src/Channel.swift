@@ -64,10 +64,8 @@ public extension SSH {
         var dtderr = Data()
         guard await exec(command: command, { d in
             stdout.append(d)
-            return true
         }, { d in
             dtderr.append(d)
-            return true
         }) else {
             return (nil, nil)
         }
@@ -80,11 +78,10 @@ public extension SSH {
     // - callout: 一个闭包，当接收到标准输出数据时调用，返回一个布尔值表示是否继续处理
     // - callerr: 一个闭包，当接收到错误输出数据时调用，返回一个布尔值表示是否继续处理
     // 返回值: 一个异步的布尔值，表示命令执行是否成功
-    func exec(command: String, _ callout: @escaping (Data) -> Bool, _ callerr: @escaping (Data) -> Bool) async -> Bool {
+    func exec(command: String, _ stdout: @escaping (Data) -> Void, _ stderr: @escaping (Data) -> Void) async -> Bool {
         guard await openChannel() else {
             return false
         }
-        var ok = true
 
         return await withUnsafeContinuation { continuation in
             let code = self.callSSH2 {
@@ -106,32 +103,11 @@ public extension SSH {
                 defer {
                     self.lockRow.unlock()
                 }
-                repeat {
-                    let (stdout, rc, dtderr, erc) = self.read()
-                    guard rc > 0 || erc > 0 else {
-                        guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
-                            ok = false
-                            self.cancelSources()
-                            return
-                        }
-                        break
-                    }
-                    if rc > 0 {
-                        if !callout(stdout) {
-                            self.cancelSources()
-                            return
-                        }
-                    } else if erc > 0 {
-                        if !callerr(dtderr) {
-                            self.cancelSources()
-                            return
-                        }
-                    }
-                    if !self.isRead {
-                        self.cancelSources()
-                        return
-                    }
-                } while self.isPol()
+                let (rc, erc) = self.read(PipeOutputStream(callback: stdout), PipeOutputStream(callback: stderr))
+                guard rc > 0 || erc > 0 else {
+                    self.cancelSources()
+                    return
+                }
                 if !self.isRead {
                     self.cancelSources()
                     return
@@ -147,7 +123,7 @@ public extension SSH {
                 #endif
                 _ = self.sendEOF()
                 self.close(.channel)
-                continuation.resume(returning: ok)
+                continuation.resume(returning: true)
             }
             self.socketSource?.resume()
         }
@@ -182,7 +158,7 @@ public extension SSH {
                 guard let rawChannel = self.rawChannel else {
                     return -1
                 }
-                return libssh2_channel_write_ex(rawChannel, stderr ? SSH_EXTENDED_DATA_STDERR : 0, data.pointerCChar, data.count)
+                return Int(io.Copy(InputStream(data: data), ChannelOutputStream(handle: rawChannel, err: stderr)))
             }
             guard code > 0 else {
                 return false
@@ -191,34 +167,32 @@ public extension SSH {
         }
     }
 
-    /// 从通道读取数据，可以选择是否读取错误信息和是否等待数据。
+    /// 从SSH通道读取数据到指定的输出流。
     /// - Parameters:
-    ///   - err: 是否读取错误信息，默认为false。
-    ///   - wait: 是否等待数据，默认为true。
-    /// - Returns: 返回一个元组，包含读取的数据和读取的字节数。如果没有数据可读或者通道已关闭，返回空的Data和-1。
-    func read(err: Bool = false, wait: Bool = true) -> (Data, Int) {
-        let buflen = bufferSize
-        let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: buflen)
-        defer {
-            buffer.deallocate()
-        }
+    ///   - output: 目标输出流，数据将被写入这里。
+    ///   - err: 如果为true，则从错误流读取数据；默认为false，从标准输出流读取。
+    ///   - wait: 如果为true，则等待操作完成；默认为true。
+    /// - Returns: 读取的字节数，如果发生错误则返回-1。
+    func read(_ output: OutputStream, err: Bool = false, wait: Bool = true) -> Int {
         let rc = callSSH2(wait) {
             guard let rawChannel = self.rawChannel else {
                 return -1
             }
-            return libssh2_channel_read_ex(rawChannel, err ? SSH_EXTENDED_DATA_STDERR : 0, buffer, buflen)
+            return Int(io.Copy(output, ChannelInputStream(handle: rawChannel, err: err), self.bufferSize))
         }
-        return (rc > 0 ? Data(bytes: buffer, count: rc) : .init(), rc)
+        return rc
     }
 
-    /// 同时读取正常数据和错误数据的函数。
-    /// - Returns: 一个元组，包含正常数据、正常数据的错误码、错误数据和错误数据的错误码。
-    func read() -> (Data, Int, Data, Int) {
+    /// 同时从SSH通道的标准输出流和错误流读取数据。
+    /// - Parameters:
+    ///   - stdout: 标准输出流的目标。
+    ///   - stderr: 错误流的目标。
+    /// - Returns: 一个元组，包含从标准输出流和错误流读取的字节数。
+    func read(_ stdout: OutputStream, _ stderr: OutputStream) -> (Int, Int) {
         var rc, erc: Int
-        var data, dataer: Data
-        (data, rc) = read(wait: false)
-        (dataer, erc) = read(err: true, wait: false)
-        return (data, rc, dataer, erc)
+        rc = read(stdout, wait: false)
+        erc = read(stderr, err: true, wait: false)
+        return (rc, erc)
     }
 
     /// 检查从SSH通道接收数据的状态。

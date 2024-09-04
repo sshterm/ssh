@@ -47,7 +47,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            let remote = SessionInputStream(rawSession: rawSession, remotePath: remotePath, sftp: sftp)
+            let remote = FileInputStream(rawSession: rawSession, remotePath: remotePath, sftp: sftp)
             guard io.Copy(remote, local, self.bufferSize, { send in
                 progress(send, remote.size)
             }) == remote.size else {
@@ -109,8 +109,7 @@ public extension SSH {
     //   - progress: 上传进度回调，返回已发送字节数和总字节数，返回值决定是否继续上传
     // - Returns: 上传是否成功
     func upload(data: Data, remotePath: String, permissions: FilePermissions = .default, sftp: Bool = false, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
-        let stream = InputStream(data: data)
-        return await upload(local: stream, fileSize: data.countInt64, remotePath: remotePath, permissions: permissions, sftp: sftp, progress: progress)
+        return await upload(local: InputStream(data: data), fileSize: data.countInt64, remotePath: remotePath, permissions: permissions, sftp: sftp, progress: progress)
     }
 
     // 上传文件的函数，异步执行
@@ -127,7 +126,7 @@ public extension SSH {
             guard let rawSession = self.rawSession else {
                 return false
             }
-            let remote = SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: sftp)
+            let remote = FileOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: sftp)
             guard io.Copy(local, remote, self.bufferSize, { send in
                 progress(send, fileSize)
             }) == fileSize else {
