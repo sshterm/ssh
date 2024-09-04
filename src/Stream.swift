@@ -6,7 +6,7 @@ import CSSH
 import Foundation
 
 class SessionInputStream: InputStream {
-    var size: Int = 0
+    var size: Int64 = 0
     var handle, raw: OpaquePointer?
     var rawSession: OpaquePointer
     let remotePath: String
@@ -22,14 +22,17 @@ class SessionInputStream: InputStream {
     }
 
     override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
+        guard let handle else{
+            return -1
+        }
         if sftp {
             nread = libssh2_sftp_read(handle, buffer, len)
             got += nread
             return nread
         } else {
             var amount = len
-            if (size - got) < amount {
-                amount = size - got
+            if (size - Int64(got)) < amount {
+                amount = Int(size - Int64(got))
             }
             nread = libssh2_channel_read_ex(handle, 0, buffer, amount)
             got += nread
@@ -53,7 +56,7 @@ class SessionInputStream: InputStream {
                 libssh2_sftp_shutdown(rawSFTP)
                 return
             }
-            size = Int(fileinfo.filesize)
+            size = Int64(fileinfo.filesize)
             self.handle = handle
             raw = rawSFTP
         } else {
@@ -61,18 +64,24 @@ class SessionInputStream: InputStream {
             guard let handle = libssh2_scp_recv2(rawSession, remotePath, &fileinfo) else {
                 return
             }
-            size = Int(fileinfo.st_size)
+            size = fileinfo.st_size
             self.handle = handle
         }
     }
 
     override func close() {
         if sftp {
-            libssh2_sftp_close_handle(handle)
-            libssh2_sftp_shutdown(raw)
+            if let handle{
+                libssh2_sftp_close_handle(handle)
+            }
+            if let raw{
+                libssh2_sftp_shutdown(raw)
+            }
         } else {
-            libssh2_channel_send_eof(handle)
-            libssh2_channel_free(handle)
+            if let handle{
+                libssh2_channel_send_eof(handle)
+                libssh2_channel_free(handle)
+            }
         }
     }
 

@@ -390,7 +390,7 @@ public extension SSH {
                 local.close()
             }
             guard io.Copy(remote, local, self.bufferSize, { send in
-                progress(Int64(send), Int64(remote.size))
+                progress(send, remote.size)
             }) == remote.size else {
                 return false
             }
@@ -477,7 +477,7 @@ public extension SSH {
                 local.close()
             }
             guard io.Copy(local, remote, self.bufferSize, { send in
-                progress(Int64(send), fileSize)
+                progress(send, fileSize)
             }) == fileSize else {
                 return false
             }
