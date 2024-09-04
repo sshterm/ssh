@@ -142,9 +142,6 @@ public class SSH {
         case .session:
             if let rawSession {
                 job.cancelAllOperations()
-                addOperation {
-                    self.sessionDelegate?.disconnect(ssh: self)
-                }
                 cancelKeepalive()
                 cancelSources()
                 shutdown(SHUT_RD)
