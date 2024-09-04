@@ -96,7 +96,7 @@ public extension SSH {
                 } else if erc > 0 {
                     self.onData(dtderr, false)
                 }
-                if self.receivedEOF || !self.isConnected {
+                if !self.isRead {
                     self.cancelSources()
                     return
                 }

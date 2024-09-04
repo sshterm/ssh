@@ -7,6 +7,14 @@ import Darwin
 import Foundation
 
 public extension SSH {
+    func download(remotePath: String, sftp: Bool = false, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Data? {
+        let stream = OutputStream.toMemory()
+        guard await download(remotePath: remotePath, local: stream, sftp: sftp, progress: progress) else {
+            return nil
+        }
+        return stream.data
+    }
+
     // 下载文件的函数，支持进度回调
     // - Parameters:
     //   - remotePath: 远程文件路径
@@ -90,6 +98,11 @@ public extension SSH {
             return false
         }
         return await upload(local: stream, fileSize: fileSize, remotePath: remotePath, permissions: permissions, sftp: sftp, progress: progress)
+    }
+
+    func upload(data: Data, remotePath: String, permissions: FilePermissions = .default, sftp: Bool = false, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
+        let stream = InputStream(data: data)
+        return await upload(local: stream, fileSize: data.countInt64, remotePath: remotePath, permissions: permissions, sftp: sftp, progress: progress)
     }
 
     // 上传文件的函数，异步执行

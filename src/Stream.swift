@@ -162,3 +162,12 @@ class SessionOutputStream: OutputStream {
         }
     }
 }
+
+extension OutputStream {
+    var data: Data? {
+        guard let data = property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {
+            return nil
+        }
+        return data
+    }
+}

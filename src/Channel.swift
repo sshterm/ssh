@@ -127,7 +127,7 @@ public extension SSH {
                             return
                         }
                     }
-                    if self.receivedEOF || !self.isConnected {
+                    if !self.isRead {
                         self.cancelSources()
                         return
                     }
