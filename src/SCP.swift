@@ -7,6 +7,12 @@ import Darwin
 import Foundation
 
 public extension SSH {
+    // 下载指定路径的文件，可以选择是否使用SFTP协议，并且可以提供一个进度回调函数。
+    // - Parameters:
+    //   - remotePath: 远程文件的路径。
+    //   - sftp: 一个布尔值，指示是否使用SFTP协议，默认为false。
+    //   - progress: 一个闭包，用于报告下载进度，接收两个Int64参数，分别代表已发送的字节数和文件总大小，返回一个布尔值决定是否继续下载。
+    // - Returns: 如果下载成功，返回Data对象；否则返回nil。
     func download(remotePath: String, sftp: Bool = false, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Data? {
         let stream = OutputStream.toMemory()
         guard await download(remotePath: remotePath, local: stream, sftp: sftp, progress: progress) else {
@@ -42,12 +48,6 @@ public extension SSH {
                 return false
             }
             let remote = SessionInputStream(rawSession: rawSession, remotePath: remotePath, sftp: sftp)
-            remote.open()
-            local.open()
-            defer {
-                remote.close()
-                local.close()
-            }
             guard io.Copy(remote, local, self.bufferSize, { send in
                 progress(send, remote.size)
             }) == remote.size else {
@@ -100,6 +100,14 @@ public extension SSH {
         return await upload(local: stream, fileSize: fileSize, remotePath: remotePath, permissions: permissions, sftp: sftp, progress: progress)
     }
 
+    // 上传数据到远程路径
+    // - Parameters:
+    //   - data: 要上传的数据
+    //   - remotePath: 远程文件路径
+    //   - permissions: 文件权限，默认为默认权限
+    //   - sftp: 是否使用SFTP协议，默认为false
+    //   - progress: 上传进度回调，返回已发送字节数和总字节数，返回值决定是否继续上传
+    // - Returns: 上传是否成功
     func upload(data: Data, remotePath: String, permissions: FilePermissions = .default, sftp: Bool = false, progress: @escaping (_ send: Int64, _ size: Int64) -> Bool) async -> Bool {
         let stream = InputStream(data: data)
         return await upload(local: stream, fileSize: data.countInt64, remotePath: remotePath, permissions: permissions, sftp: sftp, progress: progress)
@@ -120,12 +128,6 @@ public extension SSH {
                 return false
             }
             let remote = SessionOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: sftp)
-            remote.open()
-            local.open()
-            defer {
-                remote.close()
-                local.close()
-            }
             guard io.Copy(local, remote, self.bufferSize, { send in
                 progress(send, fileSize)
             }) == fileSize else {

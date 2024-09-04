@@ -25,8 +25,12 @@ public class io {
     ///   - progress: 进度回调函数，接收已复制的字节数作为参数，返回布尔值决定是否继续复制
     /// - Returns: 复制的字节数
     public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
+        w.open()
+        r.open()
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
         defer {
+            w.close()
+            r.close()
             buffer.deallocate()
         }
         var total: Int64 = 0
