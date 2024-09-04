@@ -22,7 +22,7 @@ class SessionInputStream: InputStream {
     }
 
     override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
-        guard let handle else{
+        guard let handle else {
             return -1
         }
         if sftp {
@@ -71,14 +71,14 @@ class SessionInputStream: InputStream {
 
     override func close() {
         if sftp {
-            if let handle{
+            if let handle {
                 libssh2_sftp_close_handle(handle)
             }
-            if let raw{
+            if let raw {
                 libssh2_sftp_shutdown(raw)
             }
         } else {
-            if let handle{
+            if let handle {
                 libssh2_channel_send_eof(handle)
                 libssh2_channel_free(handle)
             }
@@ -112,6 +112,9 @@ class SessionOutputStream: OutputStream {
     }
 
     override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
+        guard let handle else {
+            return -1
+        }
         nwrite = sftp ? libssh2_sftp_write(handle, buffer, len) : libssh2_channel_write_ex(handle, 0, buffer, len)
         return nwrite
     }
@@ -137,11 +140,17 @@ class SessionOutputStream: OutputStream {
 
     override func close() {
         if sftp {
-            libssh2_sftp_close_handle(handle)
-            libssh2_sftp_shutdown(raw)
+            if let handle {
+                libssh2_sftp_close_handle(handle)
+            }
+            if let raw {
+                libssh2_sftp_shutdown(raw)
+            }
         } else {
-            libssh2_channel_send_eof(handle)
-            libssh2_channel_free(handle)
+            if let handle {
+                libssh2_channel_send_eof(handle)
+                libssh2_channel_free(handle)
+            }
         }
     }
 
