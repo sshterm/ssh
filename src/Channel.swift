@@ -64,7 +64,7 @@ public extension SSH {
         var dtderr = Data()
         guard await exec(command: command, { d in
             stdout.append(d)
-            return self.isPol(true)
+            return self.isPol(false)
         }, { d in
             dtderr.append(d)
             return self.isPol(true)
