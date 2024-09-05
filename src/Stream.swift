@@ -213,14 +213,15 @@ class ChannelOutputStream: OutputStream {
 }
 
 class PipeOutputStream: OutputStream {
-    let callback: (Data) -> Void
-    init(callback: @escaping (Data) -> Void) {
+    let callback: (Data) -> Bool
+    var ok: Bool = true
+    init(callback: @escaping (Data) -> Bool) {
         self.callback = callback
         super.init()
     }
 
     override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
-        callback(Data(bytes: buffer, count: len))
+        ok = callback(Data(bytes: buffer, count: len))
         return len
     }
 
@@ -229,7 +230,7 @@ class PipeOutputStream: OutputStream {
     override func close() {}
 
     override var hasSpaceAvailable: Bool {
-        return true
+        ok
     }
 }
 

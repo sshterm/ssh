@@ -56,11 +56,24 @@ public class io {
     }
 
     // 冗余方法
+    /// 将输入流的内容复制到输出流中，使用默认的缓冲区大小。
+    /// - Parameters:
+    ///   - r: 输入流
+    ///   - w: 输出流
+    ///   - bufferSize: 缓冲区大小，默认为0x4000
+    /// - Returns: 复制的字节数
     public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000) -> Int64 {
         io.Copy(w, r, bufferSize)
     }
 
     // 冗余方法
+    /// 将输入流的内容复制到输出流中，使用默认的缓冲区大小，并提供进度回调。
+    /// - Parameters:
+    ///   - r: 输入流
+    ///   - w: 输出流
+    ///   - bufferSize: 缓冲区大小，默认为0x4000
+    ///   - progress: 进度回调函数，接收已发送的字节数，返回一个布尔值表示是否继续复制
+    /// - Returns: 复制的字节数
     public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
         io.Copy(w, r, bufferSize, progress)
     }

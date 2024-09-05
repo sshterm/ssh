@@ -64,8 +64,10 @@ public extension SSH {
         var dtderr = Data()
         guard await exec(command: command, { d in
             stdout.append(d)
+            return self.isPol(true)
         }, { d in
             dtderr.append(d)
+            return self.isPol(true)
         }) else {
             return (nil, nil)
         }
@@ -78,7 +80,7 @@ public extension SSH {
     // - callout: 一个闭包，当接收到标准输出数据时调用，返回一个布尔值表示是否继续处理
     // - callerr: 一个闭包，当接收到错误输出数据时调用，返回一个布尔值表示是否继续处理
     // 返回值: 一个异步的布尔值，表示命令执行是否成功
-    func exec(command: String, _ stdout: @escaping (Data) -> Void, _ stderr: @escaping (Data) -> Void) async -> Bool {
+    func exec(command: String, _ stdout: @escaping (Data) -> Bool, _ stderr: @escaping (Data) -> Bool) async -> Bool {
         guard await openChannel() else {
             return false
         }

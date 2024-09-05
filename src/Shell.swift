@@ -84,8 +84,10 @@ public extension SSH {
             }
             let (rc, erc) = self.read(PipeOutputStream(callback: { data in
                 self.onData(data, true)
+                return self.isPol(false)
             }), PipeOutputStream(callback: { data in
                 self.onData(data, false)
+                return self.isPol(true)
             }))
             guard rc > 0 || erc > 0 else {
                 guard rc != LIBSSH2_ERROR_SOCKET_RECV || erc != LIBSSH2_ERROR_SOCKET_RECV else {
