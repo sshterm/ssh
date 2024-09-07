@@ -20,7 +20,7 @@ public class SSH {
     public let port: Int32
 
     /// SSH 登录用户名。‌
-    public let user: String
+    public var user: String
 
     /// 连接超时时间（‌秒）‌。‌
     public let timeout: Int

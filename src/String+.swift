@@ -16,11 +16,17 @@ public extension String {
 
     // 将当前字符串的长度转换为无符号32位整数类型
     var countUInt32: UInt32 {
-        UInt32(count)
+        UInt32(utf8.count)
     }
 
     // 将当前字符串的长度转换为有符号32位整数类型
     var countInt32: Int32 {
-        Int32(count)
+        Int32(utf8.count)
+    }
+
+    // 冗余，修复错误
+    // QQ 飘在深秋 反馈
+    var count: Int {
+        utf8.count
     }
 }

@@ -84,8 +84,8 @@ public extension SSH {
         guard await openChannel() else {
             return false
         }
-
-        return await withUnsafeContinuation { continuation in
+        return await call {
+            self.channelBlocking(true)
             let code = self.callSSH2 {
                 guard let rawChannel = self.rawChannel else {
                     return -1
@@ -93,41 +93,14 @@ public extension SSH {
                 return libssh2_channel_process_startup(rawChannel, "exec", 4, command, command.countUInt32)
             }
             guard code == LIBSSH2_ERROR_NONE else {
-                self.close(.channel)
-                continuation.resume(returning: false)
-                return
+                return false
             }
-            self.channelBlocking(false)
-            self.cancelSources()
-            self.socketSource = DispatchSource.makeReadSource(fileDescriptor: self.sockfd, queue: self.queue)
-            self.socketSource?.setEventHandler {
-                self.lockRow.lock()
-                defer {
-                    self.lockRow.unlock()
-                }
-                let (rc, erc) = self.read(PipeOutputStream(callback: stdout), PipeOutputStream(callback: stderr))
-                guard rc > 0 || erc > 0 else {
-                    self.cancelSources()
-                    return
-                }
-                if !self.isRead {
-                    self.cancelSources()
-                    return
-                }
+            let (rc, erc) = self.read(PipeOutputStream(callback: stdout), PipeOutputStream(callback: stderr))
+            guard rc > 0 || erc > 0 else {
+                return false
             }
-            self.socketSource?.setCancelHandler {
-                self.lockRow.lock()
-                defer {
-                    self.lockRow.unlock()
-                }
-                #if DEBUG
-                    print("轮询socket关闭")
-                #endif
-                _ = self.sendEOF()
-                self.close(.channel)
-                continuation.resume(returning: true)
-            }
-            self.socketSource?.resume()
+            _ = self.sendEOF()
+            return true
         }
     }
 
