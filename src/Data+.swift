@@ -38,7 +38,7 @@ public extension Data {
     }
 
     func trim() -> String {
-        string.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        string.trim()
     }
 
     // 返回Data对象的字节长度作为UInt32类型的值

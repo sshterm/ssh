@@ -5,11 +5,11 @@
 import Darwin
 import Foundation
 
-public extension String {
+extension String {
     /// 返回一个指向Data对象字节表示的UnsafeMutablePointer<CChar>
     /// - Returns: 一个指向Data对象字节表示的UnsafeMutablePointer<CChar>
     var pointerCChar: UnsafeMutablePointer<CChar> {
-        return withCString { str in
+        withCString { str in
             Darwin.strdup(str)
         }
     }
@@ -26,7 +26,12 @@ public extension String {
 
     // 冗余，修复错误
     // QQ 飘在深秋 反馈
+    /// 返回字符串的UTF-8编码字符数
     var count: Int {
         utf8.count
+    }
+
+    func trim() -> String {
+        trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
     }
 }

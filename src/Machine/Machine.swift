@@ -461,4 +461,21 @@ public extension SSH {
         // 调用getTemp()异步函数获取温度数组，并使用max()方法找出最大值
         return await getTemp()?.max()
     }
+
+    func getThreads() async -> [Threads]? {
+        let (text, _) = await exec(command: "ps -eo pid,tid,%cpu,%mem,user,comm,args --sort=-%cpu | awk 'NR>1 {print $1\",\"$2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7}'")
+        guard let text = text?.trim(),!text.isEmpty else {
+            return nil
+        }
+        let lines = text.components(separatedBy: .newlines)
+        var threads: [Threads] = []
+        for line in lines {
+            let info = line.trim().components(separatedBy: ",")
+            guard info.count == 7 else {
+                continue
+            }
+            threads.append(Threads(pid: info[0], tid: info[1], cpu: Double(info[2]) ?? 0, mem: Double(info[3]) ?? 0, user: info[4], comm: info[5], args: info[6]))
+        }
+        return threads
+    }
 }

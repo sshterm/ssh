@@ -350,7 +350,7 @@ public extension SSH {
         guard rc == LIBSSH2_ERROR_NONE else {
             if rc == LIBSSH2_ERROR_SOCKET_SEND {
                 keepAliveSource?.cancel()
-                close(.session)
+                // close(.session)
             }
             return
         }

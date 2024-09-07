@@ -225,3 +225,17 @@ public struct NetworkIoInfoAll: Identifiable {
     /// 发送时丢弃的包数
     public var dropout: Int64 = 0
 }
+
+public struct Threads: Identifiable {
+    public var id: String {
+        pid
+    }
+
+    public let pid: String
+    public let tid: String
+    public let cpu: Double
+    public let mem: Double
+    public let user: String
+    public let comm: String
+    public let args: String
+}
