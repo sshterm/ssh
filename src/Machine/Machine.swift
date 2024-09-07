@@ -462,6 +462,8 @@ public extension SSH {
         return await getTemp()?.max()
     }
 
+    /// 获取当前系统中的线程信息
+    /// - Returns: 返回一个包含线程信息的数组，如果获取失败则返回nil
     func getThreads() async -> [Threads]? {
         let (text, _) = await exec(command: "ps -eo pid,tid,%cpu,%mem,user,comm,args --sort=-%cpu | awk 'NR>1 {print $1\",\"$2\",\"$3\",\"$4\",\"$5\",\"$6\",\"$7}'")
         guard let text = text?.trim(),!text.isEmpty else {
@@ -477,5 +479,25 @@ public extension SSH {
             threads.append(Threads(pid: info[0], tid: info[1], cpu: Double(info[2]) ?? 0, mem: Double(info[3]) ?? 0, user: info[4], comm: info[5], args: info[6]))
         }
         return threads
+    }
+
+    /// 获取磁盘使用信息
+    /// - Returns: 返回一个DiskInfo对象，包含总的已用空间和可用空间，如果获取失败则返回nil
+    func getDiskInfo() async -> DiskInfo? {
+        let (text, _) = await exec(command: "df | awk 'NR>1 {print $3\",\"$4}'")
+        guard let text = text?.trim(),!text.isEmpty else {
+            return nil
+        }
+        var info = DiskInfo()
+        let lines = text.components(separatedBy: .newlines)
+        for line in lines {
+            let df = line.trim().components(separatedBy: ",").map { Int64($0) ?? 0 }
+            guard df.count == 2 else {
+                continue
+            }
+            info.used += df[0]
+            info.avail += df[1]
+        }
+        return info
     }
 }

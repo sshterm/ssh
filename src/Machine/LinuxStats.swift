@@ -227,15 +227,32 @@ public struct NetworkIoInfoAll: Identifiable {
 }
 
 public struct Threads: Identifiable {
+    // 线程的唯一标识符，使用pid作为id
     public var id: String {
         pid
     }
 
+    // 线程的进程ID
     public let pid: String
+    // 线程的ID
     public let tid: String
+    // 线程占用的CPU百分比
     public let cpu: Double
+    // 线程占用的内存百分比
     public let mem: Double
+    // 线程的用户
     public let user: String
+    // 线程的命令名称
     public let comm: String
+    // 线程的命令行参数
     public let args: String
+}
+
+public struct DiskInfo: Identifiable {
+    // 磁盘信息的唯一标识符，使用UUID生成
+    public let id = UUID()
+    // 磁盘已使用的空间大小
+    public var used: Int64 = 0
+    // 磁盘可用的空间大小
+    public var avail: Int64 = 0
 }
