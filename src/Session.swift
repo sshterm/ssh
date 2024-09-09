@@ -326,10 +326,8 @@ public extension SSH {
 
     // 取消心跳包
     func cancelKeepalive() {
-        if let keepAliveSource = keepAliveSource {
-            keepAliveSource.cancel()
-            self.keepAliveSource = nil
-        }
+        keepAliveSource?.cancel()
+        keepAliveSource = nil
     }
 
     // 发送心跳包以保持连接活跃

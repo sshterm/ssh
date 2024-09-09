@@ -228,9 +228,7 @@ public extension SSH {
         #if DEBUG
             print("取消所有定时器和socket源")
         #endif
-        if let socketSource = socketSource {
-            socketSource.cancel()
-            self.socketSource = nil
-        }
+        socketSource?.cancel()
+        socketSource = nil
     }
 }

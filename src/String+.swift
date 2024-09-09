@@ -32,6 +32,6 @@ extension String {
     }
 
     func trim() -> String {
-        trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
