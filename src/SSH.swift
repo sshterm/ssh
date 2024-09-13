@@ -106,7 +106,6 @@ public class SSH {
         self.debug = debug
         self.blocking = blocking
         self.keepalive = keepalive
-        libssh2_init(0)
     }
 
     /// 关闭 SSH 会话和 Socket 连接。
@@ -155,6 +154,7 @@ public class SSH {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
                 libssh2_session_free(rawSession)
+                libssh2_exit()
                 shutdown(.w)
                 close(.socket)
                 self.rawSession = nil
@@ -162,8 +162,8 @@ public class SSH {
         }
     }
 
-    /// 析构函数，‌用于清理资源。‌
+
     deinit {
-        libssh2_exit()
+        
     }
 }

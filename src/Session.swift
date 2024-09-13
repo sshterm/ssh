@@ -86,7 +86,8 @@ public extension SSH {
             }
             SSH.getSSH(from: sess)?.trace(message: message, messageLen: messageLen)
         }
-
+        
+        libssh2_init(0)
         rawSession = libssh2_session_init_ex(nil, nil, nil, Unmanaged.passUnretained(self).toOpaque())
 
         _ = methods.map { (key: SSHMethod, value: String) in
