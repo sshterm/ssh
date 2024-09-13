@@ -3,6 +3,7 @@
 // Created by admin@ssh2.app 2024/9/3.
 
 import CSSH
+import Darwin
 import Foundation
 
 class FileInputStream: InputStream {
