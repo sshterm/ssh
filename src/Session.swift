@@ -56,7 +56,6 @@ public extension SSH {
             guard let versionString = String(data: data, encoding: .ascii), versionString == "SSH-" else {
                 return false
             }
-            print(versionString)
             return true
         }
     }
