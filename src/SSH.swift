@@ -162,8 +162,5 @@ public class SSH {
         }
     }
 
-
-    deinit {
-        
-    }
+    deinit {}
 }

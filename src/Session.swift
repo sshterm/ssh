@@ -28,10 +28,13 @@ public extension SSH {
     /// 该方法是检查后会释放会话
     /// - Returns: 如果服务器响应包含有效的SSH版本字符串，则返回true，否则返回false
     func checkServerAvaila() async -> Bool {
-        await call {
-            defer {
-                self.close()
-            }
+        guard await connect() else {
+            return false
+        }
+        defer {
+            self.close(.socket)
+        }
+        return await call {
             guard var c = "SSH-2.0-SSH2.app".trimmingCharacters(in: .whitespacesAndNewlines).data(using: .ascii) else {
                 return false
             }
@@ -44,21 +47,16 @@ public extension SSH {
             defer {
                 buffer.deallocate()
             }
-            for _ in 0 ... 255 {
+            for _ in 0 ... 3 {
                 guard io.read(self.sockfd, buffer, 1) == 1 else {
                     return false
                 }
-                guard buffer.pointee != 0x0A else {
-                    break
-                }
                 data.append(buffer, count: 1)
             }
-            if data.count > 0, data.last == 0x0D {
-                data = data[0 ... data.count - 1]
-            }
-            guard let versionString = String(data: data, encoding: .ascii), versionString.hasPrefix("SSH-") else {
+            guard let versionString = String(data: data, encoding: .ascii), versionString == "SSH-" else {
                 return false
             }
+            print(versionString)
             return true
         }
     }
@@ -86,7 +84,7 @@ public extension SSH {
             }
             SSH.getSSH(from: sess)?.trace(message: message, messageLen: messageLen)
         }
-        
+
         libssh2_init(0)
         rawSession = libssh2_session_init_ex(nil, nil, nil, Unmanaged.passUnretained(self).toOpaque())
 
@@ -101,7 +99,7 @@ public extension SSH {
         libssh2_session_flag(rawSession, LIBSSH2_FLAG_SIGPIPE, 1)
         libssh2_session_flag(rawSession, LIBSSH2_FLAG_QUOTE_PATHS, 1)
 
-        // libssh2_session_set_read_timeout(self.rawSession, self.timeout)
+        libssh2_session_set_timeout(rawSession, timeout * 1000)
         // libssh2_session_set_timeout(self.rawSession, self.timeout)
 
         libssh2_session_banner_set(rawSession, banner.isEmpty ? "SSH-2.0-libssh2_SSH2.app" : banner)
