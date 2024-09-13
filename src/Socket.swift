@@ -12,18 +12,13 @@ public extension SSH {
         guard sockfd != LIBSSH2_INVALID_SOCKET else {
             return false
         }
-        var optval: Int32 = 0
-        var optlen: socklen_t = Darwin.socklen_t(MemoryLayout<Int32>.size)
-        let result = withUnsafeMutablePointer(to: &optval) {
-            getsockopt(sockfd, SOL_SOCKET, SO_ERROR, $0, &optlen)
-        }
-        return result == 0 && optval == 0
+        return sockfd.isConnected
     }
 
     /// 连接到指定的套接字文件描述符。
     /// - Parameter sockfd: 套接字文件描述符的整数值。
     /// - Returns: 如果连接成功返回true，如果文件描述符无效（例如-1）则返回false。
-    func connect(sockfd: Int32) async -> Bool {
+    func connect(sockfd: sockFD) async -> Bool {
         await call {
             guard sockfd != LIBSSH2_INVALID_SOCKET else {
                 return false
@@ -39,7 +34,7 @@ public extension SSH {
     /// 如果套接字创建失败，则返回false。
     func connect() async -> Bool {
         await call {
-            self.close(.cocket)
+            self.close(.socket)
             let sockfd = self.create()
             guard sockfd != -1 else {
                 return false
@@ -51,7 +46,7 @@ public extension SSH {
 
     /// 创建并配置socket的函数，返回socket文件描述符。
     /// - Returns: 成功时返回socket文件描述符，失败时返回-1。
-    private func create() -> Int32 {
+    private func create() -> sockFD {
         var hints = Darwin.addrinfo()
         hints.ai_family = AF_UNSPEC
         hints.ai_socktype = SOCK_STREAM
@@ -181,10 +176,10 @@ public extension SSH {
      使用指定的方式关闭Socket
      - Parameter how: 关闭方式，默认为SHUT_RDWR，表示同时关闭读和写
      */
-    func shutdown(_ how: Int32 = SHUT_RDWR) {
+    func shutdown(_ how: Shout = .rw) {
         // 调用Darwin库的shutdown函数
-        Darwin.shutdown(sockfd, how)
-        if how == SHUT_RDWR {
+        Darwin.shutdown(sockfd, how.raw)
+        if how == .rw {
             Darwin.close(sockfd)
         }
     }
@@ -236,5 +231,39 @@ public extension Darwin.fd_set {
         return try withUnsafeMutablePointer(to: &fds_bits) {
             try block(UnsafeMutableRawPointer($0).assumingMemoryBound(to: Int32.self))
         }
+    }
+}
+
+public enum Shout {
+    case r, w, rw
+
+    var raw: Int32 {
+        switch self {
+        case .r:
+            SHUT_RD
+        case .w:
+            SHUT_WR
+        case .rw:
+            SHUT_RDWR
+        }
+    }
+}
+
+public typealias sockFD = Int32
+
+public extension sockFD {
+    /// 检查socket是否处于连接状态
+    ///
+    /// - Returns: 如果socket连接正常返回true，否则返回false
+    var isConnected: Bool {
+        guard self != -1 else {
+            return false
+        }
+        var optval: Int32 = 0
+        var optlen: socklen_t = Darwin.socklen_t(MemoryLayout<Int32>.size)
+        let result = withUnsafeMutablePointer(to: &optval) {
+            getsockopt(self, SOL_SOCKET, SO_ERROR, $0, &optlen)
+        }
+        return result == 0 && optval == 0
     }
 }

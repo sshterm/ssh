@@ -234,6 +234,50 @@ class PipeOutputStream: OutputStream {
     }
 }
 
+class SocketOutput: OutputStream {
+    let fd: sockFD
+    var nwrite: Int = 0
+    init(_ fd: sockFD) {
+        self.fd = fd
+        super.init()
+    }
+
+    override func write(_ buffer: UnsafePointer<UInt8>, maxLength len: Int) -> Int {
+        nwrite = io.write(fd, buffer, len)
+        return nwrite
+    }
+
+    override func open() {}
+
+    override func close() {}
+
+    override var hasSpaceAvailable: Bool {
+        nwrite > 0
+    }
+}
+
+class SocketInput: InputStream {
+    let fd: sockFD
+    var nread: Int = 0
+    init(_ fd: sockFD) {
+        self.fd = fd
+        super.init()
+    }
+
+    override func read(_ buffer: UnsafeMutablePointer<UInt8>, maxLength len: Int) -> Int {
+        nread = io.read(fd, buffer, len)
+        return nread
+    }
+
+    override func open() {}
+
+    override func close() {}
+
+    override var hasBytesAvailable: Bool {
+        nread > 0
+    }
+}
+
 extension OutputStream {
     var data: Data? {
         guard let data = property(forKey: Stream.PropertyKey.dataWrittenToMemoryStreamKey) as? Data else {

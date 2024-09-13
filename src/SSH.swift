@@ -44,7 +44,7 @@ public class SSH {
     public let debug: [DebugType]
 
     // sockfd 是一个表示套接字文件描述符的变量，初始值为 -1。
-    public var sockfd: Int32 = LIBSSH2_INVALID_SOCKET
+    public var sockfd: sockFD = LIBSSH2_INVALID_SOCKET
 
     /// 忽略的文件列表，目前包含当前目录(".")和上级目录("..")
     public var ignoredFiles = [".", ".."]
@@ -134,14 +134,14 @@ public class SSH {
                 }
                 self.rawChannel = nil
             }
-        case .cocket:
+        case .socket:
             if sockfd != LIBSSH2_INVALID_SOCKET {
                 shutdown()
             }
             sockfd = LIBSSH2_INVALID_SOCKET
         case .session:
             if let rawSession {
-                shutdown(SHUT_RD)
+                shutdown(.r)
                 job.cancelAllOperations()
                 lockRow.lock()
                 defer {
@@ -155,8 +155,8 @@ public class SSH {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
                 libssh2_session_free(rawSession)
-                shutdown(SHUT_WR)
-                close(.cocket)
+                shutdown(.w)
+                close(.socket)
                 self.rawSession = nil
             }
         }
@@ -164,7 +164,6 @@ public class SSH {
 
     /// 析构函数，‌用于清理资源。‌
     deinit {
-        // close(.all)
         libssh2_exit()
     }
 }

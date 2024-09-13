@@ -24,73 +24,114 @@ public extension SSH {
         return SSH.getSSH(from: abstract)
     }
 
-    // handshake函数用于初始化SSH会话并进行握手
-    func handshake() async -> Bool {
+    /// 检查服务器是否可用
+    /// 该方法是检查后会释放会话
+    /// - Returns: 如果服务器响应包含有效的SSH版本字符串，则返回true，否则返回false
+    func checkServerAvaila() async -> Bool {
         await call {
-            let disconnect: disconnectType = { sess, reason, message, messageLen, language, languageLen, abstract in
-                SSH.getSSH(from: abstract).disconnect(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
+            defer {
+                self.close()
             }
-            let send: sendType = { socket, buffer, length, flags, abstract in
-                SSH.getSSH(from: abstract).send(socket: socket, buffer: buffer, length: length, flags: flags)
-            }
-            let recv: recvType = { socket, buffer, length, flags, abstract in
-                SSH.getSSH(from: abstract).recv(socket: socket, buffer: buffer, length: length, flags: flags)
-            }
-            #if DEBUG
-                let debug: debugType = { sess, reason, message, messageLen, language, languageLen, abstract in
-                    SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
-                }
-            #endif
-            let trace: libssh2_trace_handler_func = { sess, _, message, messageLen in
-                guard let message else {
-                    return
-                }
-                SSH.getSSH(from: sess)?.trace(message: message, messageLen: messageLen)
-            }
-
-            self.rawSession = libssh2_session_init_ex(nil, nil, nil, Unmanaged.passUnretained(self).toOpaque())
-
-            _ = self.methods.map { (key: SSHMethod, value: String) in
-                libssh2_session_method_pref(self.rawSession, key.int32, value)
-            }
-
-            libssh2_trace(self.rawSession, self.debug.trace)
-            libssh2_trace_sethandler(self.rawSession, nil, trace)
-            libssh2_session_set_blocking(self.rawSession, self.blocking ? 1 : 0)
-            libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_COMPRESS, self.compress ? 1 : 0)
-            libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_SIGPIPE, 1)
-            libssh2_session_flag(self.rawSession, LIBSSH2_FLAG_QUOTE_PATHS, 1)
-
-            libssh2_session_banner_set(self.rawSession, self.banner.isEmpty ? "SSH-2.0-libssh2_SSHTerm-6.0" : self.banner)
-            #if V010b01
-                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
-                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
-                libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
-                #if DEBUG
-                    libssh2_session_callback_set2(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
-                #endif
-            #else
-                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: UnsafeMutableRawPointer.self))
-                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: UnsafeMutableRawPointer.self))
-                libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: UnsafeMutableRawPointer.self))
-                #if DEBUG
-                    libssh2_session_callback_set(self.rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
-                #endif
-            #endif
-            // self.sessionTimeout = Int(self.timeout)
-            let code = self.callSSH2 {
-                libssh2_session_handshake(self.rawSession, self.sockfd)
-            }
-            guard code == LIBSSH2_ERROR_NONE else {
-                self.close(.session)
+            guard var c = "SSH-2.0-SSH2.app".trimmingCharacters(in: .whitespacesAndNewlines).data(using: .ascii) else {
                 return false
             }
-            guard self.sessionDelegate?.connect(ssh: self, fingerprint: self.fingerprint() ?? "") ?? true else {
-                self.close(.session)
+            c.append([0x0D, 0x0A], count: 2)
+            guard io.Copy(InputStream(data: c), SocketOutput(self.sockfd)) > 0 else {
+                return false
+            }
+            let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: 1)
+            var data = Data()
+            defer {
+                buffer.deallocate()
+            }
+            for _ in 0 ... 255 {
+                guard io.read(self.sockfd, buffer, 1) == 1 else {
+                    return false
+                }
+                guard buffer.pointee != 0x0A else {
+                    break
+                }
+                data.append(buffer, count: 1)
+            }
+            if data.count > 0, data.last == 0x0D {
+                data = data[0 ... data.count - 1]
+            }
+            guard let versionString = String(data: data, encoding: .ascii), versionString.hasPrefix("SSH-") else {
                 return false
             }
             return true
         }
+    }
+
+    // handshake函数用于初始化SSH会话并进行握手
+    func handshake() async -> Bool {
+        // await call {
+        let disconnect: disconnectType = { sess, reason, message, messageLen, language, languageLen, abstract in
+            SSH.getSSH(from: abstract).disconnect(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
+        }
+        let send: sendType = { socket, buffer, length, flags, abstract in
+            SSH.getSSH(from: abstract).send(socket: socket, buffer: buffer, length: length, flags: flags)
+        }
+        let recv: recvType = { socket, buffer, length, flags, abstract in
+            SSH.getSSH(from: abstract).recv(socket: socket, buffer: buffer, length: length, flags: flags)
+        }
+        #if DEBUG
+            let debug: debugType = { sess, reason, message, messageLen, language, languageLen, abstract in
+                SSH.getSSH(from: abstract).debug(sess: sess, reason: reason, message: message, messageLen: messageLen, language: language, languageLen: languageLen)
+            }
+        #endif
+        let trace: libssh2_trace_handler_func = { sess, _, message, messageLen in
+            guard let message else {
+                return
+            }
+            SSH.getSSH(from: sess)?.trace(message: message, messageLen: messageLen)
+        }
+
+        rawSession = libssh2_session_init_ex(nil, nil, nil, Unmanaged.passUnretained(self).toOpaque())
+
+        _ = methods.map { (key: SSHMethod, value: String) in
+            libssh2_session_method_pref(self.rawSession, key.int32, value)
+        }
+
+        libssh2_trace(rawSession, self.debug.trace)
+        libssh2_trace_sethandler(rawSession, nil, trace)
+        libssh2_session_set_blocking(rawSession, blocking ? 1 : 0)
+        libssh2_session_flag(rawSession, LIBSSH2_FLAG_COMPRESS, compress ? 1 : 0)
+        libssh2_session_flag(rawSession, LIBSSH2_FLAG_SIGPIPE, 1)
+        libssh2_session_flag(rawSession, LIBSSH2_FLAG_QUOTE_PATHS, 1)
+
+        // libssh2_session_set_read_timeout(self.rawSession, self.timeout)
+        // libssh2_session_set_timeout(self.rawSession, self.timeout)
+
+        libssh2_session_banner_set(rawSession, banner.isEmpty ? "SSH-2.0-libssh2_SSH2.app" : banner)
+        #if V010b01
+            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
+            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
+            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
+            #if DEBUG
+                libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
+            #endif
+        #else
+            libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: UnsafeMutableRawPointer.self))
+            libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: UnsafeMutableRawPointer.self))
+            libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: UnsafeMutableRawPointer.self))
+            #if DEBUG
+                libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
+            #endif
+        #endif
+        let code = callSSH2 {
+            libssh2_session_handshake(self.rawSession, self.sockfd)
+        }
+        guard code == LIBSSH2_ERROR_NONE else {
+            close(.session)
+            return false
+        }
+        guard sessionDelegate?.connect(ssh: self, fingerprint: fingerprint() ?? "") ?? true else {
+            close(.session)
+            return false
+        }
+        return true
+        // }
     }
 
     // 获取服务器横幅信息
@@ -447,7 +488,6 @@ public extension SSH {
         guard let rawSession else {
             return nil
         }
-
         var cstr: UnsafeMutablePointer<CChar>?
 
         let code = libssh2_session_last_error(rawSession, &cstr, nil, 0)

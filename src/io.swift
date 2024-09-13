@@ -77,4 +77,24 @@ public class io {
     public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
         io.Copy(w, r, bufferSize, progress)
     }
+
+    /// 从文件描述符 `fd` 读取数据到缓冲区 `buffer`。
+    /// - Parameters:
+    ///   - fd: 文件描述符，标识要读取的文件。
+    ///   - buffer: 指向用于存储读取数据的缓冲区的指针。
+    ///   - len: 要读取的字节数。
+    ///   - 返回值: 实际读取的字节数，如果发生错误则返回 -1。
+    public static func read(_ fd: sockFD, _ buffer: UnsafeMutablePointer<UInt8>, _ len: Int) -> Int {
+        Darwin.read(fd, buffer, len)
+    }
+
+    /// 将缓冲区 `buffer` 中的数据写入文件描述符 `fd`。
+    /// - Parameters:
+    ///   - fd: 文件描述符，标识要写入的文件。
+    ///   - buffer: 指向包含要写入数据的缓冲区的指针。
+    ///   - len: 要写入的字节数。
+    ///   - 返回值: 实际写入的字节数，如果发生错误则返回 -1。
+    public static func write(_ fd: sockFD, _ buffer: UnsafePointer<UInt8>, _ len: Int) -> Int {
+        Darwin.write(fd, buffer, len)
+    }
 }

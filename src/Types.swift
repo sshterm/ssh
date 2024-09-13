@@ -227,8 +227,8 @@ public enum CloseType: String {
     /// 表示仅关闭通道。
     case channel
 
-    /// 表示仅关闭cocket连接。
-    case cocket
+    /// 表示仅关闭socket连接。
+    case socket
 
     /// 表示仅关闭会话。
     case session
