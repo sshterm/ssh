@@ -2,11 +2,7 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/18.
 
-#if OPEN_SSL
-    import OpenSSL
-#else
-    import wolfSSL
-#endif
+import CSSH
 import Foundation
 
 /// Crypto类提供了一个单例实例，用于表示当前使用的加密库。

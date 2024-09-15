@@ -2,11 +2,7 @@
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/8/19.
 
-#if OPEN_SSL
-    import OpenSSL
-#else
-    import wolfSSL
-#endif
+import CSSH
 import Foundation
 
 public enum ShaAlgorithm: String, CaseIterable {
