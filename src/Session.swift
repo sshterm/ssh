@@ -99,7 +99,6 @@ public extension SSH {
         libssh2_session_flag(rawSession, LIBSSH2_FLAG_QUOTE_PATHS, 1)
 
         libssh2_session_set_timeout(rawSession, timeout * 1000)
-        // libssh2_session_set_timeout(self.rawSession, self.timeout)
 
         libssh2_session_banner_set(rawSession, banner.isEmpty ? "SSH-2.0-libssh2_SSH2.app" : banner)
         #if V010b01
