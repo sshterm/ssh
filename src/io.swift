@@ -38,8 +38,10 @@ public class io {
         var nread, rc: Int
         repeat {
             nread = r.read(buffer, maxLength: bufferSize)
-            guard nread > 0 else {
-                break
+            // 修复错误
+            // QQ 往事不再 反馈
+            guard nread >= 0 else {
+                return Int64(nread)
             }
             repeat {
                 rc = w.write(buffer, maxLength: nread)
