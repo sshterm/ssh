@@ -50,7 +50,7 @@ public extension SSH {
 
     // 定义isRead属性，当通道未接收到EOF（文件结束符）、未接收到退出信号且连接状态为真时，返回true
     var isRead: Bool {
-        !(receivedEOF || receivedExit)
+        !(receivedEOF || receivedExit) && isConnected
     }
 
     /// 执行给定的命令，并异步返回标准输出和标准错误的数据。

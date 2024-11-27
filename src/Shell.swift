@@ -72,6 +72,22 @@ public extension SSH {
         }
     }
 
+    /**
+     * 暂停轮询
+     * 该方法用于暂停当前的socket源轮询，停止接收新的数据。
+     */
+    func suspendPoll() {
+        socketSource?.suspend()
+    }
+
+    /**
+     * 恢复轮询
+     * 该方法用于恢复之前暂停的socket源轮询，重新开始接收数据。
+     */
+    func resumePoll() {
+        socketSource?.resume()
+    }
+
     // poll方法用于轮询socket，读取标准输出和错误输出，并在适当的时候关闭通道。
     func poll() {
         channelBlocking(false)

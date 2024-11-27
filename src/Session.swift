@@ -100,21 +100,12 @@ public extension SSH {
 
         libssh2_session_set_timeout(rawSession, timeout * 1000)
 
-        libssh2_session_banner_set(rawSession, banner.isEmpty ? "SSH-2.0-libssh2_SSH2.app" : banner)
-        #if V010b01
-            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
-            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
-            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
-            #if DEBUG
-                libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
-            #endif
-        #else
-            libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: UnsafeMutableRawPointer.self))
-            libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: UnsafeMutableRawPointer.self))
-            libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: UnsafeMutableRawPointer.self))
-            #if DEBUG
-                libssh2_session_callback_set(rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: UnsafeMutableRawPointer.self))
-            #endif
+        libssh2_session_banner_set(rawSession, banner.hasPrefix("SSH-2") ? banner : "SSH-2.0-libssh2_SSH2.app")
+        libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_DISCONNECT, unsafeBitCast(disconnect, to: cbGenericType.self))
+        libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_SEND, unsafeBitCast(send, to: cbGenericType.self))
+        libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_RECV, unsafeBitCast(recv, to: cbGenericType.self))
+        #if DEBUG
+            libssh2_session_callback_set2(rawSession, LIBSSH2_CALLBACK_DEBUG, unsafeBitCast(debug, to: cbGenericType.self))
         #endif
         let code = callSSH2 {
             libssh2_session_handshake(self.rawSession, self.sockfd)
@@ -357,7 +348,7 @@ public extension SSH {
             #if DEBUG
                 print("心跳机制退出")
             #endif
-            // self.close(.all)
+            // self.close()
         }
         keepAliveSource.resume()
     }
@@ -386,7 +377,7 @@ public extension SSH {
         guard rc == LIBSSH2_ERROR_NONE else {
             if rc == LIBSSH2_ERROR_SOCKET_SEND {
                 keepAliveSource?.cancel()
-                // close(.session)
+                // close()
             }
             return
         }
