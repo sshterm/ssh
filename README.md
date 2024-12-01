@@ -52,7 +52,7 @@ DNS.shared.requireEncrypted(.alidns, type: .doh)
 ### SSH2连接
 ```swift
 //创建SSH
-let ssh = SH(host:  "10.0.0.1", port: 22, user: "root", timeout: 5)
+ let ssh = SHH(host:  "10.0.0.1", port: 22, user: "root", timeout: 5)
 //设置插座
  ssh.sessionDelegate = delegate
  //连接
