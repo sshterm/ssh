@@ -34,4 +34,12 @@ extension String {
     func trim() -> String {
         trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    public var isLan: Bool {
+        is_lan_ip(self) == 1
+    }
+
+    public var isIP: Bool {
+        is_ip(self) == 1
+    }
 }

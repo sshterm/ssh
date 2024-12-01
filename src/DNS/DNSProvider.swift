@@ -1,11 +1,11 @@
-// Provider.swift
+// DNSProvider.swift
 // Copyright (c) 2024 ssh2.app
 // Created by admin@ssh2.app 2024/12/1.
 
 import Network
 
 public enum DNSProvider: String, CaseIterable {
-    case alidns, google, cloudflare, quad9
+    case alidns, google, cloudflare, quad9, s360 = "360"
 
     public var name: String {
         switch self {
@@ -17,6 +17,8 @@ public enum DNSProvider: String, CaseIterable {
             "Quad9"
         case .alidns:
             "AliDNS"
+        case .s360:
+            "360"
         }
     }
 
@@ -37,7 +39,6 @@ public enum DNSProvider: String, CaseIterable {
                 "2001:4860:4860::8844",
             ]
         case .cloudflare:
-
             [
                 "1.1.1.1",
                 "1.0.0.1",
@@ -45,12 +46,18 @@ public enum DNSProvider: String, CaseIterable {
                 "2606:4700:4700::1001",
             ]
         case .quad9:
-
             [
                 "9.9.9.9",
                 "149.112.112.112",
                 "2620:fe::fe",
                 "2620:fe::9",
+            ]
+        case .s360:
+            [
+                "101.226.4.6",
+                "218.30.118.6",
+                "123.125.81.6",
+                "140.207.198.6",
             ]
         }
     }
@@ -65,6 +72,8 @@ public enum DNSProvider: String, CaseIterable {
             "https://cloudflare-dns.com/dns-query"
         case .quad9:
             "https://dns.quad9.net/dns-query"
+        case .s360:
+            "https://doh.360.cn/dns-query"
         }
     }
 
@@ -78,6 +87,8 @@ public enum DNSProvider: String, CaseIterable {
             "one.one.one.one"
         case .quad9:
             "dns.quad9.net"
+        case .s360:
+            "dot.360.cn"
         }
     }
 
@@ -102,6 +113,6 @@ public enum DNSProvider: String, CaseIterable {
     }
 }
 
-public enum ProviderType: String, CaseIterable {
+public enum DNSProviderType: String, CaseIterable {
     case doh, dot
 }

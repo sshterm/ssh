@@ -42,7 +42,7 @@ public extension DNS {
      * @param provider DNS 提供商实例
      * @param type 提供商类型
      */
-    func requireEncrypted(_ provider: DNSProvider, type: ProviderType) {
+    func requireEncrypted(_ provider: DNSProvider, type: DNSProviderType) {
         type == .dot ? requireEncryptedTLS(provider) : requireEncryptedHTTP(provider)
     }
 
@@ -58,7 +58,6 @@ public extension DNS {
         guard let ips = get_ip_addresses(hostname) else {
             return []
         }
-
         return String(cString: ips).trim().components(separatedBy: .newlines)
     }
 }
