@@ -93,11 +93,11 @@ public enum DNSProvider: String, CaseIterable {
         NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: port)
     }
 
-    public var http: NWParameters.PrivacyContext.ResolverConfiguration {
+    var http: NWParameters.PrivacyContext.ResolverConfiguration {
         return .https(serverURL, serverAddresses: getServerAddresses(port: 443))
     }
 
-    public var tls: NWParameters.PrivacyContext.ResolverConfiguration? {
+    var tls: NWParameters.PrivacyContext.ResolverConfiguration? {
         return .tls(getServerHost(port: 853), serverAddresses: getServerAddresses(port: 853))
     }
 }

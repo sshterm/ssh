@@ -13,13 +13,13 @@ Pod::Spec.new do |s|
   s.default_subspecs = :none
   s.subspec 'OpenSSL' do |cs|
     cs.dependency 'CSSH'
-    cs.source_files = 'src/**/*.{swift}'
+    cs.source_files = 'src/**/*.{swift,c,h}'
     cs.pod_target_xcconfig = { 'OTHER_SWIFT_FLAGS' => '-DOPEN_SSL -DV010b01' }
     cs.libraries = 'z'
   end
   s.subspec 'wolfSSL' do |cs|
     cs.dependency 'CSSH'
-    cs.source_files = 'src/**/*.{swift}'
+    cs.source_files = 'src/**/*.{swift,c,h}'
     cs.pod_target_xcconfig = { 'OTHER_SWIFT_FLAGS' => '-DWOLF_SSL -DV010b01' }
     cs.libraries = 'z'
   end
