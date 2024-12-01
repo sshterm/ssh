@@ -41,11 +41,18 @@ https://github.com/openssl/openssl
 
 https://github.com/wolfSSL/wolfssl
 
+# 业务说明
+    src/ SSH2业务
+    src/DNS/ DNS加密业务
+    src/Crypto/ 哈希加密业务，包括证书生存等
+    src/Machine/ Linux服务器状态查询业务
+
+
 # Demo
 
 ### 加密DNS
 ```swift
-//启动DNS 会自动加密APPP的所有DNS请求
+//启动DNS 会自动加密APP的所有DNS请求
 DNS.shared.requireEncrypted(.alidns, type: .doh)
 ```
 
@@ -61,5 +68,6 @@ DNS.shared.requireEncrypted(.alidns, type: .doh)
  await sh.handshake()
  //认证 更多方式 请参考 Auth.swift 的函数注释
  await ssh.authenticate(password: "<PASSWORD>")
-
 ```
+
+具体函数用法请参考 代码注释
