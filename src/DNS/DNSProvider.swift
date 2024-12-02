@@ -5,7 +5,7 @@
 import Network
 
 public enum DNSProvider: String, CaseIterable {
-    case alidns, google, cloudflare, quad9, s360 = "360"
+    case alidns, adguard, google, cloudflare, quad9, s360 = "360", dnspod
 
     public var name: String {
         switch self {
@@ -19,6 +19,10 @@ public enum DNSProvider: String, CaseIterable {
             "AliDNS"
         case .s360:
             "360"
+        case .adguard:
+            "AdGuard"
+        case .dnspod:
+            "DNSPod"
         }
     }
 
@@ -59,6 +63,18 @@ public enum DNSProvider: String, CaseIterable {
                 "123.125.81.6",
                 "140.207.198.6",
             ]
+        case .adguard:
+            [
+                "94.140.14.14",
+                "94.140.15.15",
+                "2a10:50c0::ad1:ff",
+                "2a10:50c0::ad2:ff",
+            ]
+        case .dnspod:
+            [
+                "1.12.12.12",
+                "120.53.53.53",
+            ]
         }
     }
 
@@ -74,6 +90,10 @@ public enum DNSProvider: String, CaseIterable {
             "https://dns.quad9.net/dns-query"
         case .s360:
             "https://doh.360.cn/dns-query"
+        case .adguard:
+            "https://dns.adguard.com/dns-query"
+        case .dnspod:
+            "https://doh.pub/dns-query"
         }
     }
 
@@ -89,7 +109,19 @@ public enum DNSProvider: String, CaseIterable {
             "dns.quad9.net"
         case .s360:
             "dot.360.cn"
+        case .adguard:
+            "dns.adguard.com"
+        case .dnspod:
+            "dot.pub"
         }
+    }
+
+    var tlsPort: NWEndpoint.Port {
+        853
+    }
+
+    var httpsPort: NWEndpoint.Port {
+        443
     }
 
     func getServerAddresses(port: NWEndpoint.Port) -> [NWEndpoint] {
@@ -104,12 +136,12 @@ public enum DNSProvider: String, CaseIterable {
         NWEndpoint.hostPort(host: NWEndpoint.Host(host), port: port)
     }
 
-    var http: NWParameters.PrivacyContext.ResolverConfiguration {
-        return .https(serverURL, serverAddresses: getServerAddresses(port: 443))
+    var https: NWParameters.PrivacyContext.ResolverConfiguration {
+        return .https(serverURL, serverAddresses: getServerAddresses(port: httpsPort))
     }
 
     var tls: NWParameters.PrivacyContext.ResolverConfiguration? {
-        return .tls(getServerHost(port: 853), serverAddresses: getServerAddresses(port: 853))
+        return .tls(getServerHost(port: tlsPort), serverAddresses: getServerAddresses(port: tlsPort))
     }
 }
 
