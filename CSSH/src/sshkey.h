@@ -5,7 +5,9 @@
 #ifndef sshkey_h
 #define sshkey_h
 
-#include <openssl.h>
+#include <string.h>
+#include <openssl/buffer.h>
+#include <openssl/evp.h>
 
 // 函数：sshkey_ed25519_pub
 // 功能：从给定的EVP_PKEY结构体中提取Ed25519公钥，并将其转换为字符串格式返回。
