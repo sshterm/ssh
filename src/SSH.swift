@@ -88,14 +88,14 @@ public class SSH {
     /// - Parameters:
     ///   - host: 远程主机地址，必填。
     ///   - port: 远程主机端口，默认为22。
-    ///   - user: 连接用户名，必填。
+    ///   - user: 连接用户名，默认为root。
     ///   - timeout: 连接超时时间，默认为15秒。
     ///   - compress: 是否启用压缩，默认为true。
     ///   - methods: SSH方法及其对应的字符串参数，使用字典表示，默认为空字典。
     ///   - blocking: 是否阻塞模式，默认为true。
     ///   - debug: 调试类型，默认为无。
     ///   - keepalive: 是否保持心跳，默认为false。
-    public init(host: String, port: Int32, user: String, timeout: Int = 15, compress: Bool = true, blocking: Bool = true, banner: String = "", methods: [SSHMethod: String] = [:], debug: [DebugType] = [.none], keepalive: Bool = false) {
+    public init(host: String, port: Int32 = 22, user: String = "root", timeout: Int = 15, compress: Bool = true, blocking: Bool = true, banner: String = "", methods: [SSHMethod: String] = [:], debug: [DebugType] = [.none], keepalive: Bool = false) {
         self.host = host
         self.port = port
         self.user = user
