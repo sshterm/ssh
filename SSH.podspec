@@ -3,7 +3,7 @@ Pod::Spec.new do |s|
   s.name             = 'SSH'
   s.version          = '0.1.0'
   s.summary          = 'SSH,libssh2'
-  s.description      = "libssh2 + wolfSSL swift"
+  s.description      = "libssh2 + OpenSSL + wolfSSL swift"
   s.homepage         = 'https://github.com/sshterm/ssh'
   s.license          = 'MIT'
   s.author           = { 'sshterm' => 'admin@ssh2.app' }
