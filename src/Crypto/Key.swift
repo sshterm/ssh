@@ -3,8 +3,9 @@
 // Created by admin@ssh2.app 2024/8/27.
 
 #if OPEN_SSL
-    import CSSH
+
     import Foundation
+    import OpenSSL
 
     public extension Crypto {
         /// 生成指定位数的RSA密钥对
