@@ -6,13 +6,13 @@ SSH Term APP [ssh2.app](https://ssh2.app/) 的 SSH2连接核心
 全中文注释
 
 # 使用 OpenSSL 版
-
+协议全，推荐，只编译了libcrypto并未编译libssl
 ```
 pod 'SSH/OpenSSL', :git => 'https://github.com/sshterm/ssh.git'
 ```
 
 # 使用 wolfSSL 版
-
+协议少，不支持ED25519等，适合轻量级应用
 ```
 pod 'SSH/wolfSSL', :git => 'https://github.com/sshterm/ssh.git'
 ```
