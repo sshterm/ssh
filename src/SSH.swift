@@ -121,11 +121,13 @@ public class SSH {
             }
         case .channel:
             if let rawChannel {
-                libssh2_channel_set_blocking(rawChannel, 0)
+                libssh2_channel_set_blocking(rawChannel, 1)
                 lock.lock()
                 defer {
                     lock.unlock()
                 }
+                libssh2_channel_close(rawChannel)
+                libssh2_channel_wait_closed(rawChannel)
                 libssh2_channel_free(rawChannel)
                 addOperation {
                     self.channelDelegate?.disconnect(ssh: self)
