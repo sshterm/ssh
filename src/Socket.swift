@@ -77,12 +77,45 @@ public extension SSH {
             setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, &timeoutStruct, socklen_t(MemoryLayout<timeval>.size))
             setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, &timeoutStruct, socklen_t(MemoryLayout<timeval>.size))
 
-            if Darwin.connect(sockfd, info.pointee.ai_addr, info.pointee.ai_addrlen) == 0 {
-                break
+            // 设置为非阻塞模式进行连接
+            let flags = fcntl(sockfd, F_GETFL, 0)
+            guard flags >= 0 else {
+                Darwin.close(sockfd)
+                continue
             }
-
-            Darwin.close(sockfd)
-            sockfd = -1
+            _ = fcntl(sockfd, F_SETFL, flags | O_NONBLOCK)
+            
+            // 非阻塞连接
+            let connectResult = Darwin.connect(sockfd, info.pointee.ai_addr, info.pointee.ai_addrlen)
+            if connectResult < 0 && errno == EINPROGRESS {
+                var writeSet = fd_set()
+                writeSet.zero()
+                writeSet.set(sockfd)
+                
+                let selectResult = Darwin.select(sockfd + 1, nil, &writeSet, nil, &timeoutStruct)
+                if selectResult <= 0 {
+                    Darwin.close(sockfd)
+                    sockfd = -1
+                    continue
+                }
+                
+                // 检查连接是否成功
+                var error: Int32 = 0
+                var len = socklen_t(MemoryLayout<Int32>.size)
+                if getsockopt(sockfd, SOL_SOCKET, SO_ERROR, &error, &len) < 0 || error != 0 {
+                    Darwin.close(sockfd)
+                    sockfd = -1
+                    continue
+                }
+            } else if connectResult < 0 {
+                Darwin.close(sockfd)
+                sockfd = -1
+                continue
+            }
+            
+            // 恢复阻塞模式
+            _ = fcntl(sockfd, F_SETFL, flags)
+            break
         }
 
         return sockfd
