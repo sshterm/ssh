@@ -2,6 +2,7 @@
 // Copyright (c) 2025 ssh2.app
 // Created by admin@ssh2.app 2024/12/1.
 
+import CSSH
 import Foundation
 import Network
 
