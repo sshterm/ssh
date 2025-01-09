@@ -1,5 +1,5 @@
 // SCP.swift
-// Copyright (c) 2024 ssh2.app
+// Copyright (c) 2025 ssh2.app
 // Created by admin@ssh2.app 2024/8/21.
 
 import Darwin
@@ -48,7 +48,7 @@ public extension SSH {
             }
             let remote = FileInputStream(rawSession: rawSession, remotePath: remotePath, sftp: sftp)
             guard io.Copy(remote, local, self.bufferSize, { send in
-                progress(send, remote.size)
+                progress(Int64(send), remote.size)
             }) == remote.size else {
                 return false
             }
@@ -127,7 +127,7 @@ public extension SSH {
             }
             let remote = FileOutputStream(rawSession: rawSession, remotePath: remotePath, size: fileSize, permissions: permissions, sftp: sftp)
             guard io.Copy(local, remote, self.bufferSize, { send in
-                progress(send, fileSize)
+                progress(Int64(send), fileSize)
             }) == fileSize else {
                 return false
             }

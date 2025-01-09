@@ -1,7 +1,8 @@
 // Auth.swift
-// Copyright (c) 2024 ssh2.app
+// Copyright (c) 2025 ssh2.app
 // Created by admin@ssh2.app 2024/11/30.
 
+import CSSH
 import Foundation
 
 public extension SSH {

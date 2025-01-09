@@ -10,17 +10,20 @@ SSH Term APP [ssh2.app](https://ssh2.app/) 的 SSH2连接核心
 
 ### 不包括libssl，占用空间小
 ```
+pod 'CSSH/OpenSSL', :git => 'https://github.com/sshterm/cssh.git'
 pod 'SSH/OpenSSL', :git => 'https://github.com/sshterm/ssh.git'
 ```
 
 ### 使用完整的OpenSSL包括libssl
 ```
+pod 'CSSH/OpenSSLFull', :git => 'https://github.com/sshterm/cssh.git'
 pod 'SSH/OpenSSLFull', :git => 'https://github.com/sshterm/ssh.git'
 ```
 
 # 使用 wolfSSL 版
 协议少，不支持ED25519等，适合轻量级应用
 ```
+pod 'CSSH/wolfSSL', :git => 'https://github.com/sshterm/cssh.git'
 pod 'SSH/wolfSSL', :git => 'https://github.com/sshterm/ssh.git'
 ```
 

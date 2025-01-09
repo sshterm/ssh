@@ -1,7 +1,8 @@
 // io.swift
-// Copyright (c) 2024 ssh2.app
+// Copyright (c) 2025 ssh2.app
 // Created by admin@ssh2.app 2024/9/3.
 
+import CSSH
 import Darwin
 import Foundation
 
@@ -12,7 +13,7 @@ public class io {
     ///   - r: 源输入流
     ///   - bufferSize: 缓冲区大小，默认为16384字节
     /// - Returns: 复制的字节数
-    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000) -> Int64 {
+    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000) -> Int {
         io.Copy(w, r, bufferSize) { _ in
             true
         }
@@ -25,7 +26,7 @@ public class io {
     ///   - bufferSize: 缓冲区大小，默认为16384字节
     ///   - progress: 进度回调函数，接收已复制的字节数作为参数，返回布尔值决定是否继续复制
     /// - Returns: 复制的字节数
-    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
+    public static func Copy(_ w: OutputStream, _ r: InputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int) -> Bool) -> Int {
         w.open()
         r.open()
         let buffer = UnsafeMutablePointer<CChar>.allocate(capacity: bufferSize)
@@ -34,21 +35,23 @@ public class io {
             r.close()
             buffer.deallocate()
         }
-        var total: Int64 = 0
+        var total = 0
         var nread, rc: Int
         repeat {
             nread = r.read(buffer, maxLength: bufferSize)
             // 修复错误
             // QQ 往事不再 反馈
             guard nread >= 0 else {
-                return Int64(nread)
+                return nread
             }
             repeat {
-                rc = w.write(buffer, maxLength: nread)
+                repeat {
+                    rc = w.write(buffer, maxLength: nread)
+                } while rc == LIBSSH2_ERROR_EAGAIN
                 if rc < 0 {
-                    return Int64(rc)
+                    return rc
                 }
-                total += Int64(rc)
+                total += rc
                 nread -= rc
                 if !progress(total) {
                     return total
@@ -65,7 +68,7 @@ public class io {
     ///   - w: 输出流
     ///   - bufferSize: 缓冲区大小，默认为0x4000
     /// - Returns: 复制的字节数
-    public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000) -> Int64 {
+    public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000) -> Int {
         io.Copy(w, r, bufferSize)
     }
 
@@ -77,7 +80,7 @@ public class io {
     ///   - bufferSize: 缓冲区大小，默认为0x4000
     ///   - progress: 进度回调函数，接收已发送的字节数，返回一个布尔值表示是否继续复制
     /// - Returns: 复制的字节数
-    public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int64) -> Bool) -> Int64 {
+    public static func Copy(_ r: InputStream, _ w: OutputStream, _ bufferSize: Int = 0x4000, _ progress: @escaping (_ send: Int) -> Bool) -> Int {
         io.Copy(w, r, bufferSize, progress)
     }
 
