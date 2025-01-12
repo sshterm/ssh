@@ -150,7 +150,7 @@ public class SSH {
                 cancelSources()
                 close(.channel)
                 close(.sftp)
-                _ = callSSH2 {
+                if sockfd.isConnected {
                     libssh2_session_disconnect_ex(rawSession, SSH_DISCONNECT_BY_APPLICATION, "SSH Term: Disconnect", "")
                 }
                 libssh2_session_free(rawSession)
