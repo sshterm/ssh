@@ -12,7 +12,7 @@
         /// 生成指定位数的RSA密钥对
         /// - Parameter bits: 密钥位数，默认为2048位
         /// - Returns: 生成的密钥对的OpaquePointer，如果失败则返回nil
-        func keygenRSA(_ bits: Int = 2048) -> OpaquePointer? {
+        func keygenRSA(_ bits: Int32 = 2048) -> OpaquePointer? {
             keygen(bits, id: .rsa)
         }
 
@@ -27,7 +27,7 @@
         ///   - bits: 密钥位数，对于RSA算法有效，默认为2048位
         ///   - id: 密钥算法类型，默认为RSA
         /// - Returns: 生成的密钥对的OpaquePointer，如果失败则返回nil
-        func keygen(_ bits: Int = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
+        func keygen(_ bits: Int32 = 2048, id: keyAlgorithm = .rsa) -> OpaquePointer? {
             let genctx = EVP_PKEY_CTX_new_id(id.id, nil)
             defer {
                 EVP_PKEY_CTX_free(genctx)
@@ -36,7 +36,7 @@
             switch id {
             case .rsa:
                 EVP_PKEY_keygen_init(genctx)
-                EVP_PKEY_CTX_set_rsa_keygen_bits(genctx, Int32(bits))
+                EVP_PKEY_CTX_set_rsa_keygen_bits(genctx, bits)
             case .ed25519:
                 EVP_PKEY_keygen_init(genctx)
             }

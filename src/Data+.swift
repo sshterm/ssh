@@ -54,4 +54,24 @@ public extension Data {
     var countInt64: Int64 {
         Int64(count) // 将count属性的值转换为Int32类型
     }
+
+    func load<T>() -> T {
+        return withUnsafeBytes { ptr in
+            ptr.load(fromByteOffset: 0, as: T.self)
+        }
+    }
+
+    static func from<T>(_ v: T) -> Data where T: FixedWidthInteger {
+        var value = v
+        return Data(bytes: &value, count: MemoryLayout<T>.size)
+    }
+
+    static func from(_ value: String) -> Data {
+        return Data(value.utf8)
+    }
+
+    static func from(_ value: Bool) -> Data {
+        let bool: UInt8 = value ? 1 : 0
+        return .from(bool)
+    }
 }
