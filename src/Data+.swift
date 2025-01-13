@@ -34,7 +34,7 @@ public extension Data {
 
     // 尝试将Data对象解码为UTF-8字符串，如果失败则返回空字符串
     var string: String {
-        String(data: self, encoding: .utf8) ?? "" // 使用String的构造器尝试解码，并使用nil合并运算符处理解码失败的情况
+        String(data: self, encoding: .utf8) ?? ""
     }
 
     func trim() -> String {
@@ -43,19 +43,25 @@ public extension Data {
 
     // 返回Data对象的字节长度作为UInt32类型的值
     var countUInt32: UInt32 {
-        UInt32(count) // 将count属性的值转换为UInt32类型
+        UInt32(count)
     }
 
     // 返回Data对象的字节长度作为Int32类型的值
     var countInt32: Int32 {
-        Int32(count) // 将count属性的值转换为Int32类型
+        Int32(count)
     }
 
+    // 将count属性的值转换为Int32类型
     var countInt64: Int64 {
-        Int64(count) // 将count属性的值转换为Int32类型
+        Int64(count)
+    }
+    
+    var bool: Bool{
+        let bool: UInt8 = load()
+        return bool == 1
     }
 
-    func load<T>() -> T {
+    func load<T>() -> T where T: FixedWidthInteger {
         return withUnsafeBytes { ptr in
             ptr.load(fromByteOffset: 0, as: T.self)
         }
