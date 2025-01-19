@@ -1,3 +1,8 @@
+SSH Term APP 7.0以后版本将采用重构核心
+
+[https://github.com/sshterm/ssh2](https://github.com/sshterm/ssh2)
+
+
 # ssh
 libssh2 + OpenSSL + wolfSSL 的swift实现
 
