@@ -1,4 +1,4 @@
-SSH Term APP 7.0以后版本将采用重构核心
+SSH Term APP will adopt a refactored core from version 7.0 onwards.
 
 [https://github.com/sshterm/ssh2](https://github.com/sshterm/ssh2)
 
