@@ -1,3 +1,6 @@
+# 支持多路复用和负载
+使用：https://github.com/foxterm/SSH
+
 SSH Term APP will adopt a refactored core from version 7.0 onwards.
 
 [https://github.com/sshterm/ssh2](https://github.com/sshterm/ssh2)
